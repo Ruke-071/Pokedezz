@@ -28,7 +28,7 @@ export const FavoritesScreen = ({ navigation }) => {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <FlatList
         data={favoritedPokemonList}
-        keyExtractor={(item) => String(item.id)}
+        keyExtractor={(item) => item.name}
         numColumns={2}
         renderItem={({ item }) => (
           <View style={styles.gridColumn}>

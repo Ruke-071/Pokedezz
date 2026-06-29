@@ -16,6 +16,13 @@ function getGeneration(id) {
   return 10; // Future fallback
 }
 
+// Known partner/starter Pokémon with custom stats (HP, Attack, Speed)
+// Source: Bulbapedia / official game data
+const PARTNER_STAT_OVERRIDES = {
+  'pikachu-starter': { hp: 45, attack: 80, speed: 120 },  // Partner Pikachu (Let's Go)
+  'eevee-starter':   { hp: 65, attack: 75, speed: 65 },   // Partner Eevee (Let's Go)
+};
+
 const speciesCache = {};
 
 async function fetchSpeciesData(url) {
@@ -36,7 +43,7 @@ async function fetchPokemonData(url) {
   try {
     const pokemonRes = await axios.get(url);
     const pokemon = pokemonRes.data;
-    
+
     let species = null;
     if (pokemon.species && pokemon.species.url) {
       species = await fetchSpeciesData(pokemon.species.url);
@@ -45,23 +52,45 @@ async function fetchPokemonData(url) {
     // Get types
     const types = pokemon.types.map(t => t.type.name);
 
-    // Get HP, Attack, Speed stats
-    const hp = pokemon.stats.find(s => s.stat.name === 'hp')?.base_stat || 0;
-    const attack = pokemon.stats.find(s => s.stat.name === 'attack')?.base_stat || 0;
-    const speed = pokemon.stats.find(s => s.stat.name === 'speed')?.base_stat || 0;
+    // Get all 6 base stats from API
+    let hp      = pokemon.stats.find(s => s.stat.name === 'hp')?.base_stat || 0;
+    let attack  = pokemon.stats.find(s => s.stat.name === 'attack')?.base_stat || 0;
+    let defense = pokemon.stats.find(s => s.stat.name === 'defense')?.base_stat || 0;
+    let spAtk   = pokemon.stats.find(s => s.stat.name === 'special-attack')?.base_stat || 0;
+    let spDef   = pokemon.stats.find(s => s.stat.name === 'special-defense')?.base_stat || 0;
+    let speed   = pokemon.stats.find(s => s.stat.name === 'speed')?.base_stat || 0;
 
+    // Apply stat overrides for partner/starter forms
+    if (PARTNER_STAT_OVERRIDES[pokemon.name]) {
+      hp     = PARTNER_STAT_OVERRIDES[pokemon.name].hp;
+      attack = PARTNER_STAT_OVERRIDES[pokemon.name].attack;
+      speed  = PARTNER_STAT_OVERRIDES[pokemon.name].speed;
+    }
+
+    // Use base species ID so Mega/Gmax share the same dex number
     const speciesId = species ? species.id : pokemon.id;
 
+    // Determine variant type from name
+    const isMega  = /mega/i.test(pokemon.name);
+    const isGmax  = /gmax/i.test(pokemon.name);
+    const variant = isMega ? 'mega' : isGmax ? 'gmax' : null;
+
     return {
-      id: pokemon.id,
+      id: pokemon.id,         // each form's own unique dex number
+      speciesId: speciesId,   // base species dex number
       name: pokemon.name,
-      types: types,
-      hp: hp,
-      attack: attack,
-      speed: speed,
+      types,
+      hp,
+      attack,
+      defense,
+      spAtk,
+      spDef,
+      speed,
+      total: hp + attack + defense + spAtk + spDef + speed, // BST
       generation: getGeneration(speciesId),
       isLegendary: species ? (species.is_legendary || false) : false,
-      isMythical: species ? (species.is_mythical || false) : false
+      isMythical:  species ? (species.is_mythical  || false) : false,
+      variant,               // "mega" | "gmax" | null
     };
   } catch (error) {
     console.error(`Error fetching Pokemon from ${url}: ${error.message}`);
@@ -73,7 +102,7 @@ async function main() {
   console.log('Fetching all Pokemon list...');
   const listRes = await axios.get('https://pokeapi.co/api/v2/pokemon?limit=10000');
   const pokemonList = listRes.data.results;
-  
+
   console.log(`Found ${pokemonList.length} Pokemon variants. Starting to fetch details...`);
 
   const BATCH_SIZE = 40;
@@ -81,28 +110,36 @@ async function main() {
 
   for (let i = 0; i < pokemonList.length; i += BATCH_SIZE) {
     const batchUrls = pokemonList.slice(i, i + BATCH_SIZE).map(p => p.url);
-    
+
     console.log(`Fetching batch ${i + 1} to ${Math.min(i + BATCH_SIZE, pokemonList.length)} of ${pokemonList.length}...`);
-    
-    const promises = batchUrls.map(url => fetchPokemonData(url));
-    const batchResults = await Promise.all(promises);
-    
+
+    const batchResults = await Promise.all(batchUrls.map(url => fetchPokemonData(url)));
+
     for (const res of batchResults) {
-      if (res) {
-        results.push(res);
-      }
+      if (res) results.push(res);
     }
-    
-    // Pause to respect PokeAPI limits
+
+    // Pause to respect PokeAPI rate limits
     await new Promise(resolve => setTimeout(resolve, 300));
   }
 
-  // Sort results by ID to ensure correct order
-  results.sort((a, b) => a.id - b.id);
+  // Sort: group by base species first, base form before variants, then alpha within variants
+  results.sort((a, b) => {
+    // Primary: sort by speciesId so all forms of a Pokémon stay together
+    if (a.speciesId !== b.speciesId) return a.speciesId - b.speciesId;
+    // Base form (no variant) comes first
+    if (!a.variant && b.variant) return -1;
+    if (a.variant && !b.variant) return 1;
+    // Among variants: gmax before mega, then alpha
+    return a.name.localeCompare(b.name);
+  });
 
   const outputPath = path.join(__dirname, '..', 'src', 'data', 'pokemonIndex.js');
-  const outputContent = `/**
- * Pre-generated index of Pokémon from Generation 1 to 9, including mega evolutions and regional forms.
+  const outputContent =
+`/**
+ * Pre-generated index of Pokémon from Generation 1 to 9, including mega evolutions,
+ * gigantamax forms, regional forms, and partner forms.
+ * Mega/Gmax forms share the same dex id as their base species.
  * Generated automatically using PokeAPI data.
  */
 export const pokemonIndex = ${JSON.stringify(results, null, 2)};

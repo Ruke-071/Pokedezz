@@ -49,11 +49,11 @@ export const TeamBuilderScreen = ({ navigation }) => {
 
         slots.push(
           <View
-            key={`slot-${pokemon.id}`}
+            key={`slot-${pokemon.name}`}
             style={[
               styles.slotCard,
               {
-                backgroundColor: theme.colors.card,
+                backgroundColor: theme.dark ? `${cardBorderColor}2B` : `${cardBorderColor}1D`,
                 borderColor: cardBorderColor,
                 borderWidth: 1.5,
               }
@@ -68,6 +68,7 @@ export const TeamBuilderScreen = ({ navigation }) => {
                 <Text numberOfLines={1} style={[styles.slotName, { color: theme.colors.text }]}>
                   {pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)}
                 </Text>
+                <Text style={[styles.slotId, { color: theme.colors.textSecondary }]}>#{pokemon.id}{pokemon.variant ? ` (API ${pokemon.originalId})` : ''}</Text>
                 <View style={styles.typesRow}>
                   {pokemon.types.map(t => (
                     <View key={t} style={[styles.typeBadge, { backgroundColor: TYPE_COLORS[t.toLowerCase()] }]}>
@@ -90,7 +91,7 @@ export const TeamBuilderScreen = ({ navigation }) => {
         slots.push(
           <TouchableOpacity
             key={`empty-${i}`}
-            onPress={() => navigation.navigate('PokeHome')}
+            onPress={() => navigation.navigate('Home')}
             style={[
               styles.emptySlot,
               {

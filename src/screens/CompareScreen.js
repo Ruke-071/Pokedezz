@@ -178,7 +178,7 @@ export const CompareScreen = () => {
               <View style={[styles.suggestionsList, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
                 {suggestions1.map(item => (
                   <TouchableOpacity
-                    key={item.id}
+                    key={item.name}
                     onPress={() => selectPokemon(item, 1)}
                     style={[styles.suggestionItem, { borderBottomColor: theme.colors.border }]}
                   >
@@ -218,7 +218,7 @@ export const CompareScreen = () => {
               <View style={[styles.suggestionsList, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
                 {suggestions2.map(item => (
                   <TouchableOpacity
-                    key={item.id}
+                    key={item.name}
                     onPress={() => selectPokemon(item, 2)}
                     style={[styles.suggestionItem, { borderBottomColor: theme.colors.border }]}
                   >

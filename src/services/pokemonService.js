@@ -369,6 +369,42 @@ export const getPokemonDetails = async (pokemonId) => {
 
     const cryUrl = data.cries?.latest || data.cries?.legacy || `https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/${data.id}.ogg`;
 
+    // EV yield string (e.g. "1 Sp. Atk, 2 HP")
+    const evYield = data.stats
+      .filter(s => s.effort > 0)
+      .map(s => {
+        const names = {
+          'hp': 'HP', 'attack': 'Atk', 'defense': 'Def',
+          'special-attack': 'Sp. Atk', 'special-defense': 'Sp. Def', 'speed': 'Speed'
+        };
+        return `${s.effort} ${names[s.stat.name] || s.stat.name}`;
+      })
+      .join(' · ') || 'None';
+
+    const training = {
+      evYield,
+      captureRate: speciesData?.capture_rate ?? '?',
+      baseHappiness: speciesData?.base_happiness ?? '?',
+      baseExperience: data.base_experience ?? '?',
+      growthRate: speciesData?.growth_rate?.name?.replace(/-/g, ' ') ?? '?',
+    };
+
+    // gender_rate: -1 = genderless, 0-8 proportion of female (out of 8)
+    const genderRate = speciesData?.gender_rate ?? -1;
+    const femaleRatio = genderRate === -1 ? null : Math.round((genderRate / 8) * 100);
+    const maleRatio = femaleRatio === null ? null : 100 - femaleRatio;
+    const eggGroups = speciesData?.egg_groups?.map(g => g.name.replace(/-/g, ' ')) ?? [];
+    const hatchSteps = speciesData?.hatch_counter != null ? (speciesData.hatch_counter + 1) * 255 : null;
+
+    const breeding = {
+      genderless: genderRate === -1,
+      maleRatio,
+      femaleRatio,
+      eggGroups,
+      eggCycles: speciesData?.hatch_counter ?? '?',
+      hatchSteps,
+    };
+
     return {
       id: data.id,
       name: data.name,
@@ -380,6 +416,8 @@ export const getPokemonDetails = async (pokemonId) => {
       moves,
       lore,
       cryUrl,
+      training,
+      breeding,
       sprites: {
         artwork: data.sprites?.other?.['official-artwork']?.front_default,
         artworkShiny: data.sprites?.other?.['official-artwork']?.front_shiny,
@@ -572,35 +610,8 @@ export const getPokemonEvolutionChain = async (pokemonId) => {
       rootNode = parseEvolutionChain(chainRes.data.chain)[0];
     }
 
-    // 5. Inject Mega Evolutions from our local database
-    const injectMegas = (node) => {
-      const megas = pokemonIndex.filter(p => 
-        p.name === `${node.name}-mega` || 
-        p.name === `${node.name}-mega-x` || 
-        p.name === `${node.name}-mega-y`
-      );
-
-      for (const mega of megas) {
-        node.evolvesTo.push({
-          id: mega.id,
-          name: mega.name,
-          minLevel: null,
-          trigger: 'Mega Evolution',
-          item: getMegaStoneName(mega.name),
-          evolvesTo: []
-        });
-      }
-
-      for (const child of node.evolvesTo) {
-        if (child.trigger !== 'Mega Evolution') {
-          injectMegas(child);
-        }
-      }
-    };
-    
-    if (rootNode) {
-      injectMegas(rootNode);
-    }
+    // No longer injecting megas into standard evolution chain.
+    // They will be displayed in their own section.
 
     return rootNode;
 

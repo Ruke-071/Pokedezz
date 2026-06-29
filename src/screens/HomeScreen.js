@@ -8,7 +8,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Keyboard
+  Keyboard,
+  ScrollView
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { PokemonCard } from '../components/PokemonCard';
@@ -209,7 +210,7 @@ export const HomeScreen = ({ navigation }) => {
       {/* Main Grid List */}
       <FlatList
         data={paginatedList}
-        keyExtractor={(item) => String(item.id)}
+        keyExtractor={(item) => item.name}
         numColumns={2}
         renderItem={renderPokemonCard}
         onEndReached={loadMore}
@@ -247,6 +248,15 @@ export const HomeScreen = ({ navigation }) => {
         }
         contentContainerStyle={styles.listContent}
       />
+
+      {/* Floating Action Button (Compare) */}
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+        activeOpacity={0.8}
+        onPress={() => navigation.navigate('Compare')}
+      >
+        <Ionicons name="aperture" size={28} color="#ffffff" />
+      </TouchableOpacity>
 
       {/* Filter Modal */}
       <FilterModal
@@ -338,5 +348,38 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 10,
     textAlign: 'center',
+  },
+  quickPillsScroll: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  quickPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  quickPillText: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
 });
