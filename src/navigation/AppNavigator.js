@@ -13,6 +13,7 @@ import { TeamBuilderScreen } from '../screens/TeamBuilderScreen';
 import { CompareScreen } from '../screens/CompareScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { MovesetScreen } from '../screens/MovesetScreen';
+import { StatCalculatorScreen } from '../screens/StatCalculatorScreen';
 
 const RootStack = createNativeStackNavigator();
 
@@ -58,15 +59,18 @@ export default function AppNavigator() {
               </TouchableOpacity>
             ),
             headerRight: () => (
-              <View style={{ flexDirection: 'row', gap: 18, marginRight: 8, alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', gap: 16, marginRight: 8, alignItems: 'center' }}>
+                <TouchableOpacity onPress={() => navigation.navigate('StatCalculator')}>
+                  <Ionicons name="calculator-outline" size={22} color={theme.colors.text} />
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => navigation.navigate('Favorites')}>
-                  <Ionicons name="star-outline" size={24} color={theme.colors.text} />
+                  <Ionicons name="star-outline" size={22} color={theme.colors.text} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => navigation.navigate('TeamBuilder')}>
-                  <Ionicons name="checkmark-circle-outline" size={24} color={theme.colors.text} />
+                  <Ionicons name="checkmark-circle-outline" size={22} color={theme.colors.text} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-                  <Ionicons name="ellipsis-vertical" size={24} color={theme.colors.text} />
+                  <Ionicons name="ellipsis-vertical" size={22} color={theme.colors.text} />
                 </TouchableOpacity>
               </View>
             ),
@@ -86,6 +90,11 @@ export default function AppNavigator() {
           name="TeamBuilder"
           component={TeamBuilderScreen}
           options={{ title: 'Team Builder' }}
+        />
+        <RootStack.Screen
+          name="StatCalculator"
+          component={StatCalculatorScreen}
+          options={{ title: 'Stat Calculator' }}
         />
         <RootStack.Screen
           name="Settings"

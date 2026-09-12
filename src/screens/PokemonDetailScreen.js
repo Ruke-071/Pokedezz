@@ -578,6 +578,12 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
               #{String(details.id).padStart(4, '0')}
             </Text>
             <View style={styles.actionRow}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('StatCalculator', { pokemon: details, id: details.id })}
+                style={[styles.roundActionBtn, { backgroundColor: theme.colors.card }]}
+              >
+                <Ionicons name="calculator-outline" size={20} color={typeColor} />
+              </TouchableOpacity>
               <TouchableOpacity onPress={handlePlayCry} style={[styles.roundActionBtn, { backgroundColor: theme.colors.card }]}>
                 <Ionicons name="volume-high" size={20} color={theme.colors.primary} />
               </TouchableOpacity>
@@ -686,7 +692,17 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
 
               {/* Base Stats */}
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Base Stats</Text>
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={[styles.sectionTitle, { color: theme.colors.text, marginBottom: 0 }]}>Base Stats</Text>
+                  <TouchableOpacity
+                    style={[styles.calcHeaderBtn, { borderColor: typeColor }]}
+                    onPress={() => navigation.navigate('StatCalculator', { pokemon: details, id: details.id })}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="calculator-outline" size={14} color={typeColor} />
+                    <Text style={[styles.calcHeaderBtnText, { color: typeColor }]}>Stat Calculator</Text>
+                  </TouchableOpacity>
+                </View>
                 <View style={[styles.statsCard, { backgroundColor: theme.colors.card }]}>
                   <StatBar label="HP" value={details.stats.hp} color="#FF5252" />
                   <StatBar label="Attack" value={details.stats.attack} color="#FF7A00" />
@@ -700,6 +716,18 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
                       {details.stats.hp + details.stats.attack + details.stats.defense + details.stats.specialAttack + details.stats.specialDefense + details.stats.speed}
                     </Text>
                   </View>
+
+                  <TouchableOpacity
+                    style={[styles.calcCtaBtn, { backgroundColor: `${typeColor}15`, borderColor: `${typeColor}40` }]}
+                    onPress={() => navigation.navigate('StatCalculator', { pokemon: details, id: details.id })}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="calculator" size={15} color={typeColor} />
+                    <Text style={[styles.calcCtaBtnText, { color: typeColor }]}>
+                      Calculate Final Stats (EVs & IVs)
+                    </Text>
+                    <Ionicons name="chevron-forward" size={14} color={typeColor} />
+                  </TouchableOpacity>
                 </View>
               </View>
 
@@ -1122,7 +1150,39 @@ const styles = StyleSheet.create({
   physicalVal: { fontSize: 15, fontWeight: '800', marginVertical: 4 },
   physicalLabel: { fontSize: 11, fontWeight: '600' },
   section: { marginBottom: 24 },
-  sectionTitle: { fontSize: 18, fontWeight: '800', marginBottom: 12 },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  calcHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  calcHeaderBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  calcCtaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    marginTop: 12,
+  },
+  calcCtaBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
 
   // Abilities — datadex style
   abilitiesCard: { borderRadius: 16, overflow: 'hidden', elevation: 2 },
