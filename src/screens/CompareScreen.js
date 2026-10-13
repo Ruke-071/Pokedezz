@@ -176,9 +176,9 @@ export const CompareScreen = () => {
             {/* Suggestions 1 */}
             {suggestions1.length > 0 && (
               <View style={[styles.suggestionsList, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-                {suggestions1.map(item => (
+                {suggestions1.map((item, idx) => (
                   <TouchableOpacity
-                    key={item.name}
+                    key={`${item.name}-${item.id}-${idx}`}
                     onPress={() => selectPokemon(item, 1)}
                     style={[styles.suggestionItem, { borderBottomColor: theme.colors.border }]}
                   >
@@ -216,9 +216,9 @@ export const CompareScreen = () => {
             {/* Suggestions 2 */}
             {suggestions2.length > 0 && (
               <View style={[styles.suggestionsList, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-                {suggestions2.map(item => (
+                {suggestions2.map((item, idx) => (
                   <TouchableOpacity
-                    key={item.name}
+                    key={`${item.name}-${item.id}-${idx}`}
                     onPress={() => selectPokemon(item, 2)}
                     style={[styles.suggestionItem, { borderBottomColor: theme.colors.border }]}
                   >
@@ -251,8 +251,8 @@ export const CompareScreen = () => {
                   {details1.name.charAt(0).toUpperCase() + details1.name.slice(1)}
                 </Text>
                 <View style={styles.typesRow}>
-                  {details1.types.map(t => (
-                    <View key={t} style={[styles.typeBadge, { backgroundColor: TYPE_COLORS[t.toLowerCase()] }]}>
+                  {details1.types.map((t, idx) => (
+                    <View key={`${t}-${idx}`} style={[styles.typeBadge, { backgroundColor: TYPE_COLORS[t.toLowerCase()] }]}>
                       <Text style={styles.typeText}>{t.toUpperCase().slice(0, 4)}</Text>
                     </View>
                   ))}
@@ -271,8 +271,8 @@ export const CompareScreen = () => {
                   {details2.name.charAt(0).toUpperCase() + details2.name.slice(1)}
                 </Text>
                 <View style={styles.typesRow}>
-                  {details2.types.map(t => (
-                    <View key={t} style={[styles.typeBadge, { backgroundColor: TYPE_COLORS[t.toLowerCase()] }]}>
+                  {details2.types.map((t, idx) => (
+                    <View key={`${t}-${idx}`} style={[styles.typeBadge, { backgroundColor: TYPE_COLORS[t.toLowerCase()] }]}>
                       <Text style={styles.typeText}>{t.toUpperCase().slice(0, 4)}</Text>
                     </View>
                   ))}
@@ -298,16 +298,16 @@ export const CompareScreen = () => {
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Abilities</Text>
               <View style={[styles.compareRowCard, { backgroundColor: theme.colors.card }]}>
                 <View style={styles.abilitiesCol}>
-                  {details1.abilities.map(a => (
-                    <Text key={a.name} style={[styles.abilityItemText, { color: theme.colors.text }]}>
+                  {details1.abilities.map((a, idx) => (
+                    <Text key={`${a.name}-${idx}`} style={[styles.abilityItemText, { color: theme.colors.text }]}>
                       • {a.name.replace('-', ' ')} {a.isHidden && '(Hidden)'}
                     </Text>
                   ))}
                 </View>
                 <View style={[styles.abilitiesDivider, { backgroundColor: theme.colors.border }]} />
                 <View style={styles.abilitiesCol}>
-                  {details2.abilities.map(a => (
-                    <Text key={a.name} style={[styles.abilityItemText, { color: theme.colors.text, textAlign: 'right' }]}>
+                  {details2.abilities.map((a, idx) => (
+                    <Text key={`${a.name}-${idx}`} style={[styles.abilityItemText, { color: theme.colors.text, textAlign: 'right' }]}>
                       {a.name.replace('-', ' ')} {a.isHidden && '(Hidden)'} •
                     </Text>
                   ))}

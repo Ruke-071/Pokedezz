@@ -70,8 +70,8 @@ export const TeamBuilderScreen = ({ navigation }) => {
                 </Text>
                 <Text style={[styles.slotId, { color: theme.colors.textSecondary }]}>#{pokemon.id}{pokemon.variant ? ` (API ${pokemon.originalId})` : ''}</Text>
                 <View style={styles.typesRow}>
-                  {pokemon.types.map(t => (
-                    <View key={t} style={[styles.typeBadge, { backgroundColor: TYPE_COLORS[t.toLowerCase()] }]}>
+                  {pokemon.types.map((t, idx) => (
+                    <View key={`${t}-${idx}`} style={[styles.typeBadge, { backgroundColor: TYPE_COLORS[t.toLowerCase()] }]}>
                       <Text style={styles.typeText}>{t.toUpperCase()}</Text>
                     </View>
                   ))}

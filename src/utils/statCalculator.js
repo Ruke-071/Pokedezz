@@ -243,3 +243,5 @@ export const EV_PRESETS = [
     evs: { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
   },
 ];
+
+export * from './heldItems.js';

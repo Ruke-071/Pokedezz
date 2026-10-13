@@ -357,10 +357,10 @@ export const PokemonCard = React.memo(({ pokemon, onPress }) => {
 
       {/* Type Badges */}
       <View style={styles.typesRow}>
-        {pokemon.types.map(t => {
+        {pokemon.types.map((t, idx) => {
           const tc = TYPE_COLORS[t.toLowerCase()] || '#A8A878';
           return (
-            <View key={t} style={[styles.typeBadge, { backgroundColor: tc }]}>
+            <View key={`${t}-${idx}`} style={[styles.typeBadge, { backgroundColor: tc }]}>
               <Text style={styles.typeText}>{t.toUpperCase()}</Text>
             </View>
           );

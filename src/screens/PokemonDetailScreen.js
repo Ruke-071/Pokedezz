@@ -11,6 +11,7 @@ import {
   Modal,
   Pressable,
   FlatList,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -128,15 +129,15 @@ const EvolutionTree = ({ node, currentId, theme, navigation }) => {
         ]}
       >
         <Image source={{ uri: stageArtwork }} style={styles.stageImage} resizeMode="contain" />
-        <Text style={[styles.stageName, { color: theme.colors.text }]}>
-          {node.name.charAt(0).toUpperCase() + node.name.slice(1)}
+        <Text numberOfLines={1} style={[styles.stageName, { color: theme.colors.text }]}>
+          {node.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
         </Text>
       </TouchableOpacity>
 
       {node.evolvesTo && node.evolvesTo.length > 0 && (
         <View style={{ marginLeft: 8, justifyContent: 'center' }}>
-          {node.evolvesTo.map((child) => (
-            <View key={child.id} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 4 }}>
+          {node.evolvesTo.map((child, index) => (
+            <View key={`${child.id || ''}-${child.name || ''}-${index}`} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 4 }}>
               <View style={styles.arrowContainer}>
                 <Ionicons name="arrow-forward" size={16} color={theme.colors.textSecondary} />
                 {child.minLevel && (
@@ -144,7 +145,7 @@ const EvolutionTree = ({ node, currentId, theme, navigation }) => {
                 )}
                 {child.item && (
                   <Text style={[styles.levelText, { color: theme.colors.textSecondary, maxWidth: 70 }]}>
-                    {child.item.replace('-', ' ')}
+                    {child.item.replace(/-/g, ' ')}
                   </Text>
                 )}
                 {child.region && (
@@ -203,10 +204,10 @@ const VariantFormCard = ({ item, theme, navigation }) => {
           {capitalizedName}
         </Text>
         <View style={styles.variantTypesCol}>
-          {item.types.map(t => {
+          {item.types.map((t, idx) => {
             const tc = TYPE_COLORS[t.toLowerCase()] || '#A8A878';
             return (
-              <View key={t} style={[styles.variantTypePill, { borderColor: tc, backgroundColor: theme.dark ? `${tc}1C` : `${tc}0D` }]}>
+              <View key={`${t}-${idx}`} style={[styles.variantTypePill, { borderColor: tc, backgroundColor: theme.dark ? `${tc}1C` : `${tc}0D` }]}>
                 <Text style={[styles.variantTypePillText, { color: tc }]}>{t.toUpperCase()}</Text>
               </View>
             );
@@ -283,6 +284,23 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
     loadData();
     return () => { active = false; };
   }, [id]);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const [pokeDetails, pokeEvolutions] = await Promise.all([
+        getPokemonDetails(id, true),
+        getPokemonEvolutionChain(id, true),
+      ]);
+      if (pokeDetails) setDetails(pokeDetails);
+      if (pokeEvolutions) setEvolutionChain(pokeEvolutions);
+    } catch (e) {
+      console.warn('Refresh error', e);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handlePlayCry = () => { if (player) player.play(); };
 
@@ -570,6 +588,14 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
         style={{ flex: 1, backgroundColor: screenBgColor }}
         contentContainerStyle={{ paddingBottom: 90 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={typeColor}
+            colors={[typeColor]}
+          />
+        }
       >
         {/* Hero Banner */}
         <View style={[styles.heroBanner, { backgroundColor: bannerBgColor }]}>
@@ -624,15 +650,27 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
             <View style={styles.badgeRow}>
               {isChamp && <View style={[styles.badge, styles.champBadge]}><Text style={styles.badgeText}>🏆 Champions</Text></View>}
               {isNew && <View style={[styles.badge, styles.newBadge]}><Text style={styles.badgeText}>✨ New</Text></View>}
+              {details.isOfflineFallback && (
+                <View style={[styles.badge, styles.offlineBadge]}>
+                  <Ionicons name="cloud-offline" size={11} color="#FF9800" style={{ marginRight: 4 }} />
+                  <Text style={[styles.badgeText, { color: '#FF9800' }]}>Offline Mode</Text>
+                </View>
+              )}
+              {details.isCachedData && (
+                <View style={[styles.badge, styles.cachedBadge]}>
+                  <Ionicons name="checkmark-done" size={11} color="#4CAF50" style={{ marginRight: 4 }} />
+                  <Text style={[styles.badgeText, { color: '#4CAF50' }]}>Cached</Text>
+                </View>
+              )}
             </View>
           </View>
 
           {/* Types */}
           <View style={styles.typesRow}>
-            {details.types.map(t => {
+            {details.types.map((t, idx) => {
               const tc = TYPE_COLORS[t.toLowerCase()] || '#A8A878';
               return (
-                <View key={t} style={[styles.typeBadge, { backgroundColor: tc }]}>
+                <View key={`${t}-${idx}`} style={[styles.typeBadge, { backgroundColor: tc }]}>
                   <Text style={styles.typeText}>{t.toUpperCase()}</Text>
                 </View>
               );
@@ -667,7 +705,7 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
                 <View style={[styles.abilitiesCard, { backgroundColor: theme.colors.card }]}>
                   {details.abilities.map((a, idx) => (
                     <TouchableOpacity
-                      key={a.name}
+                      key={`${a.name}-${idx}`}
                       style={[
                         styles.abilityListItem,
                         idx < details.abilities.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.colors.border },
@@ -775,10 +813,10 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
                   <Text style={[styles.matchupSubtitle, { color: theme.colors.text }]}>Weaknesses</Text>
                   {weaknesses.length > 0 ? (
                     <View style={styles.matchupGrid}>
-                      {weaknesses.map(w => {
+                      {weaknesses.map((w, idx) => {
                         const tc = TYPE_COLORS[w.type] || '#A8A878';
                         return (
-                          <View key={w.type} style={[styles.matchupBadge, { backgroundColor: tc }]}>
+                          <View key={`${w.type}-${idx}`} style={[styles.matchupBadge, { backgroundColor: tc }]}>
                             <Text style={styles.matchupText}>{w.type.toUpperCase()}</Text>
                             <Text style={styles.matchupVal}>x{w.value}</Text>
                           </View>
@@ -790,10 +828,10 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
                   <Text style={[styles.matchupSubtitle, { color: theme.colors.text, marginTop: 14 }]}>Resistances</Text>
                   {resistances.length > 0 ? (
                     <View style={styles.matchupGrid}>
-                      {resistances.map(r => {
+                      {resistances.map((r, idx) => {
                         const tc = TYPE_COLORS[r.type] || '#A8A878';
                         return (
-                          <View key={r.type} style={[styles.matchupBadge, { backgroundColor: tc }]}>
+                          <View key={`${r.type}-${idx}`} style={[styles.matchupBadge, { backgroundColor: tc }]}>
                             <Text style={styles.matchupText}>{r.type.toUpperCase()}</Text>
                             <Text style={styles.matchupVal}>x{r.value}</Text>
                           </View>
@@ -806,10 +844,10 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
                     <>
                       <Text style={[styles.matchupSubtitle, { color: theme.colors.text, marginTop: 14 }]}>Immunities</Text>
                       <View style={styles.matchupGrid}>
-                        {immunities.map(i => {
+                        {immunities.map((i, idx) => {
                           const tc = TYPE_COLORS[i.type] || '#A8A878';
                           return (
-                            <View key={i.type} style={[styles.matchupBadge, { backgroundColor: tc }]}>
+                            <View key={`${i.type}-${idx}`} style={[styles.matchupBadge, { backgroundColor: tc }]}>
                               <Text style={styles.matchupText}>{i.type.toUpperCase()}</Text>
                               <Text style={styles.matchupVal}>0x</Text>
                             </View>
@@ -840,8 +878,8 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
                       {baseFormEntry && (
                         <VariantFormCard item={baseFormEntry} theme={theme} navigation={navigation} />
                       )}
-                      {alternateForms.map(item => (
-                        <VariantFormCard key={`alt-${item.id}`} item={item} theme={theme} navigation={navigation} />
+                      {alternateForms.map((item, idx) => (
+                        <VariantFormCard key={`alt-${item.name}-${item.id}-${idx}`} item={item} theme={theme} navigation={navigation} />
                       ))}
                     </ScrollView>
                   </View>
@@ -853,8 +891,8 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
                 <View style={styles.section}>
                   <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Mega Evolution</Text>
                   <View style={[styles.formsContainerCard, { backgroundColor: theme.colors.card }]}>
-                    {megaForms.map(megaItem => (
-                      <View key={`mega-row-${megaItem.id}`} style={styles.megaRowLayout}>
+                    {megaForms.map((megaItem, idx) => (
+                      <View key={`mega-row-${megaItem.name}-${megaItem.id}-${idx}`} style={styles.megaRowLayout}>
                         {baseFormEntry && (
                           <VariantFormCard item={baseFormEntry} theme={theme} navigation={navigation} />
                         )}
@@ -972,8 +1010,8 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
                 <View style={[styles.moreDivider, { backgroundColor: theme.colors.border }]} />
                 <View style={styles.moreRow}>
                   <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
-                    {(details.breeding?.eggGroups ?? []).map(g => (
-                      <View key={g} style={[styles.eggGroupPill, { backgroundColor: typeColor + '25', borderColor: typeColor }]}>
+                    {(details.breeding?.eggGroups ?? []).map((g, idx) => (
+                      <View key={`${g}-${idx}`} style={[styles.eggGroupPill, { backgroundColor: typeColor + '25', borderColor: typeColor }]}>
                         <Text style={[styles.eggGroupText, { color: typeColor }]}>
                           {g.charAt(0).toUpperCase() + g.slice(1)}
                         </Text>
@@ -1141,6 +1179,8 @@ const styles = StyleSheet.create({
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
   champBadge: { backgroundColor: '#FFD700' },
   newBadge: { backgroundColor: '#1AD1B7' },
+  offlineBadge: { backgroundColor: '#FFA00020', borderColor: '#FFA000', borderWidth: 1, flexDirection: 'row', alignItems: 'center' },
+  cachedBadge: { backgroundColor: '#4CAF5020', borderColor: '#4CAF50', borderWidth: 1, flexDirection: 'row', alignItems: 'center' },
   badgeText: { fontSize: 10, fontWeight: '800', color: '#000' },
   typesRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
   typeBadge: { paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20 },

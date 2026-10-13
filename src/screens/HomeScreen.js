@@ -210,7 +210,7 @@ export const HomeScreen = ({ navigation }) => {
       {/* Main Grid List */}
       <FlatList
         data={paginatedList}
-        keyExtractor={(item) => item.name}
+        keyExtractor={(item, index) => `${item.id}-${item.name}-${index}`}
         numColumns={2}
         renderItem={renderPokemonCard}
         onEndReached={loadMore}
