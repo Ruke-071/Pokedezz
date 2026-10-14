@@ -14,6 +14,7 @@ import { CompareScreen } from '../screens/CompareScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { MovesetScreen } from '../screens/MovesetScreen';
 import { StatCalculatorScreen } from '../screens/StatCalculatorScreen';
+import { BattleCalculatorScreen } from '../screens/BattleCalculatorScreen';
 
 const RootStack = createNativeStackNavigator();
 
@@ -60,6 +61,9 @@ export default function AppNavigator() {
             ),
             headerRight: () => (
               <View style={{ flexDirection: 'row', gap: 16, marginRight: 8, alignItems: 'center' }}>
+                <TouchableOpacity onPress={() => navigation.navigate('BattleCalculator')}>
+                  <Ionicons name="flash-outline" size={22} color={theme.colors.text} />
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => navigation.navigate('StatCalculator')}>
                   <Ionicons name="calculator-outline" size={22} color={theme.colors.text} />
                 </TouchableOpacity>
@@ -90,6 +94,11 @@ export default function AppNavigator() {
           name="TeamBuilder"
           component={TeamBuilderScreen}
           options={{ title: 'Team Builder' }}
+        />
+        <RootStack.Screen
+          name="BattleCalculator"
+          component={BattleCalculatorScreen}
+          options={{ title: 'Battle Calculator' }}
         />
         <RootStack.Screen
           name="StatCalculator"

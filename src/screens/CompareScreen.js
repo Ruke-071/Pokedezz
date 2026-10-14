@@ -18,7 +18,7 @@ import { TYPE_COLORS } from '../components/FilterModal';
 import { Ionicons } from '@expo/vector-icons';
 import { PokeBallLoading } from '../components/PokeBallLoading';
 
-export const CompareScreen = () => {
+export const CompareScreen = ({ navigation }) => {
   const { theme } = useTheme();
 
   // Selected pokemon state
@@ -278,6 +278,16 @@ export const CompareScreen = () => {
               </View>
             </View>
 
+            {/* Battle Calculator Link */}
+            <TouchableOpacity
+              style={[styles.battleSimBtn, { backgroundColor: theme.colors.primary }]}
+              onPress={() => navigation.navigate('BattleCalculator', { attacker: poke1, defender: poke2 })}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="flash" size={16} color="#FFFFFF" />
+              <Text style={styles.battleSimBtnText}>Simulate Battle in Damage Calculator</Text>
+            </TouchableOpacity>
+
             {/* Base Stats Comparative list */}
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Base Stats Comparison</Text>
@@ -534,5 +544,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'capitalize',
+  },
+  battleSimBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 14,
+    paddingVertical: 12,
+    marginTop: 14,
+    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  battleSimBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
 });

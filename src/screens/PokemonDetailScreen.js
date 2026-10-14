@@ -764,6 +764,18 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
                     </Text>
                     <Ionicons name="chevron-forward" size={14} color={typeColor} />
                   </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.calcCtaBtn, { backgroundColor: '#FF7A0018', borderColor: '#FF7A0040', marginTop: 8 }]}
+                    onPress={() => navigation.navigate('BattleCalculator', { attacker: details })}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="flash" size={15} color="#FF7A00" />
+                    <Text style={[styles.calcCtaBtnText, { color: '#FF7A00' }]}>
+                      Battle & Damage Calculator
+                    </Text>
+                    <Ionicons name="chevron-forward" size={14} color="#FF7A00" />
+                  </TouchableOpacity>
                 </View>
               </View>
 

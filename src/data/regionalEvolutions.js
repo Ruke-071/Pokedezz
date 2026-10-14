@@ -10,6 +10,284 @@ import { pokemonIndex } from './pokemonIndex.js';
  * - Authentic sprites, official artwork links, levels, and evolution items
  */
 export const REGIONAL_EVOLUTION_CHAINS = {
+  // ── Standard & Regional Counterpart Lines ──────────────────────────────────
+  'grimer': {
+    id: 88,
+    name: 'grimer',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 89, name: 'muk', minLevel: 38, trigger: 'level-up', item: null, region: null, evolvesTo: [] }
+    ]
+  },
+  'muk': {
+    id: 88,
+    name: 'grimer',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 89, name: 'muk', minLevel: 38, trigger: 'level-up', item: null, region: null, evolvesTo: [] }
+    ]
+  },
+
+  'rattata': {
+    id: 19,
+    name: 'rattata',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 20, name: 'raticate', minLevel: 20, trigger: 'level-up', item: null, region: null, evolvesTo: [] }
+    ]
+  },
+  'raticate': {
+    id: 19,
+    name: 'rattata',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 20, name: 'raticate', minLevel: 20, trigger: 'level-up', item: null, region: null, evolvesTo: [] }
+    ]
+  },
+
+  'sandshrew': {
+    id: 27,
+    name: 'sandshrew',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 28, name: 'sandslash', minLevel: 22, trigger: 'level-up', item: null, region: null, evolvesTo: [] }
+    ]
+  },
+  'sandslash': {
+    id: 27,
+    name: 'sandshrew',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 28, name: 'sandslash', minLevel: 22, trigger: 'level-up', item: null, region: null, evolvesTo: [] }
+    ]
+  },
+
+  'vulpix': {
+    id: 37,
+    name: 'vulpix',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 38, name: 'ninetales', minLevel: null, trigger: 'use-item', item: 'fire-stone', region: null, evolvesTo: [] }
+    ]
+  },
+  'ninetales': {
+    id: 37,
+    name: 'vulpix',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 38, name: 'ninetales', minLevel: null, trigger: 'use-item', item: 'fire-stone', region: null, evolvesTo: [] }
+    ]
+  },
+
+  'diglett': {
+    id: 50,
+    name: 'diglett',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 51, name: 'dugtrio', minLevel: 26, trigger: 'level-up', item: null, region: null, evolvesTo: [] }
+    ]
+  },
+  'dugtrio': {
+    id: 50,
+    name: 'diglett',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 51, name: 'dugtrio', minLevel: 26, trigger: 'level-up', item: null, region: null, evolvesTo: [] }
+    ]
+  },
+
+  'meowth': {
+    id: 52,
+    name: 'meowth',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 53, name: 'persian', minLevel: 28, trigger: 'level-up', item: null, region: null, evolvesTo: [] }
+    ]
+  },
+  'persian': {
+    id: 52,
+    name: 'meowth',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 53, name: 'persian', minLevel: 28, trigger: 'level-up', item: null, region: null, evolvesTo: [] }
+    ]
+  },
+
+  'geodude': {
+    id: 74,
+    name: 'geodude',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      {
+        id: 75,
+        name: 'graveler',
+        minLevel: 25,
+        trigger: 'level-up',
+        item: null,
+        region: null,
+        evolvesTo: [
+          { id: 76, name: 'golem', minLevel: null, trigger: 'trade', item: null, region: null, evolvesTo: [] }
+        ]
+      }
+    ]
+  },
+  'graveler': {
+    id: 74,
+    name: 'geodude',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      {
+        id: 75,
+        name: 'graveler',
+        minLevel: 25,
+        trigger: 'level-up',
+        item: null,
+        region: null,
+        evolvesTo: [
+          { id: 76, name: 'golem', minLevel: null, trigger: 'trade', item: null, region: null, evolvesTo: [] }
+        ]
+      }
+    ]
+  },
+  'golem': {
+    id: 74,
+    name: 'geodude',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      {
+        id: 75,
+        name: 'graveler',
+        minLevel: 25,
+        trigger: 'level-up',
+        item: null,
+        region: null,
+        evolvesTo: [
+          { id: 76, name: 'golem', minLevel: null, trigger: 'trade', item: null, region: null, evolvesTo: [] }
+        ]
+      }
+    ]
+  },
+
+  'pikachu': {
+    id: 25,
+    name: 'pikachu',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 26, name: 'raichu', minLevel: null, trigger: 'use-item', item: 'thunder-stone', region: null, evolvesTo: [] },
+      { id: 10100, name: 'raichu-alola', minLevel: null, trigger: 'use-item', item: 'thunder-stone', region: 'alola', evolvesTo: [] }
+    ]
+  },
+  'raichu': {
+    id: 25,
+    name: 'pikachu',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 26, name: 'raichu', minLevel: null, trigger: 'use-item', item: 'thunder-stone', region: null, evolvesTo: [] },
+      { id: 10100, name: 'raichu-alola', minLevel: null, trigger: 'use-item', item: 'thunder-stone', region: 'alola', evolvesTo: [] }
+    ]
+  },
+
+  'exeggcute': {
+    id: 102,
+    name: 'exeggcute',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 103, name: 'exeggutor', minLevel: null, trigger: 'use-item', item: 'leaf-stone', region: null, evolvesTo: [] },
+      { id: 10114, name: 'exeggutor-alola', minLevel: null, trigger: 'use-item', item: 'leaf-stone', region: 'alola', evolvesTo: [] }
+    ]
+  },
+  'exeggutor': {
+    id: 102,
+    name: 'exeggcute',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 103, name: 'exeggutor', minLevel: null, trigger: 'use-item', item: 'leaf-stone', region: null, evolvesTo: [] },
+      { id: 10114, name: 'exeggutor-alola', minLevel: null, trigger: 'use-item', item: 'leaf-stone', region: 'alola', evolvesTo: [] }
+    ]
+  },
+
+  'cubone': {
+    id: 104,
+    name: 'cubone',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 105, name: 'marowak', minLevel: 28, trigger: 'level-up', item: null, region: null, evolvesTo: [] },
+      { id: 10115, name: 'marowak-alola', minLevel: 28, trigger: 'level-up', item: null, region: 'alola', evolvesTo: [] }
+    ]
+  },
+  'marowak': {
+    id: 104,
+    name: 'cubone',
+    minLevel: null,
+    trigger: null,
+    item: null,
+    region: null,
+    evolvesTo: [
+      { id: 105, name: 'marowak', minLevel: 28, trigger: 'level-up', item: null, region: null, evolvesTo: [] },
+      { id: 10115, name: 'marowak-alola', minLevel: 28, trigger: 'level-up', item: null, region: 'alola', evolvesTo: [] }
+    ]
+  },
+
   // ── Alolan Lines ──────────────────────────────────────────────────────────
   'grimer-alola': {
     id: 10112,
