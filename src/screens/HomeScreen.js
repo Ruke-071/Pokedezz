@@ -20,6 +20,9 @@ import { championsPokemon } from '../data/championsPokemon';
 import { newlyAddedPokemon } from '../data/newlyAdded';
 import { Ionicons } from '@expo/vector-icons';
 import { PokeBallLoading } from '../components/PokeBallLoading';
+import { matchesPokemonSearch } from '../utils/searchUtils';
+import { PikachuFaceWidget } from '../components/PikachuFaceTheme';
+import { PikachuStickerBackground } from '../components/PikachuStickerBackground';
 
 export const HomeScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -54,8 +57,7 @@ export const HomeScreen = ({ navigation }) => {
     return pokemonIndex.filter(pokemon => {
       // 1. Search Query
       if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        if (!pokemon.name.toLowerCase().includes(query) && !String(pokemon.id).includes(query)) {
+        if (!matchesPokemonSearch(pokemon, searchQuery)) {
           return false;
         }
       }
@@ -144,6 +146,13 @@ export const HomeScreen = ({ navigation }) => {
     navigation.navigate('PokemonDetail', { id: pokemon.id, name: pokemon.name });
   }, [navigation]);
 
+  const handleSearchSubmit = useCallback(() => {
+    Keyboard.dismiss();
+    if (filteredPokemonList.length > 0) {
+      navigateToDetails(filteredPokemonList[0]);
+    }
+  }, [filteredPokemonList, navigateToDetails]);
+
   const renderPokemonCard = useCallback(({ item }) => (
     <View style={styles.gridColumn}>
       <PokemonCard pokemon={item} onPress={navigateToDetails} />
@@ -164,22 +173,33 @@ export const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isPikachu && <PikachuStickerBackground />}
       {/* Search & Filter Header */}
       <View style={[styles.headerActions, { borderBottomColor: theme.colors.border }]}>
         <View style={[styles.searchBarContainer, { backgroundColor: theme.colors.card }]}>
-          <Ionicons name="search" size={18} color={theme.colors.textSecondary} style={styles.searchIcon} />
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleSearchSubmit}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="search" size={18} color={theme.colors.textSecondary} style={styles.searchIcon} />
+          </TouchableOpacity>
           <TextInput
-            placeholder="Search by name or number..."
+            placeholder={theme.isPikachu ? '⚡ Search Pokémon in Pikachu Mode...' : 'Search by name or number...'}
             placeholderTextColor={theme.colors.textSecondary}
             style={[styles.searchInput, { color: theme.colors.text }]}
             value={searchQuery}
+            returnKeyType="search"
+            onSubmitEditing={handleSearchSubmit}
+            autoCorrect={false}
+            autoCapitalize="none"
             onChangeText={(text) => {
               setSearchQuery(text);
               setDisplayedItems(20); // Reset page size on search
             }}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name="close-circle" size={18} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           )}
@@ -214,6 +234,8 @@ export const HomeScreen = ({ navigation }) => {
         keyExtractor={(item, index) => `${item.id}-${item.name}-${index}`}
         numColumns={2}
         renderItem={renderPokemonCard}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         initialNumToRender={10}
@@ -221,6 +243,11 @@ export const HomeScreen = ({ navigation }) => {
         windowSize={5}
         removeClippedSubviews={true}
         updateCellsBatchingPeriod={50}
+        ListHeaderComponent={theme.isPikachu ? () => (
+          <View style={{ width: '100%', paddingHorizontal: 4, paddingBottom: 6 }}>
+            <PikachuFaceWidget />
+          </View>
+        ) : null}
         ListFooterComponent={() => {
           if (displayedItems < filteredPokemonList.length) {
             return (

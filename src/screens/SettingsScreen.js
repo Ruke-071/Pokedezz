@@ -7,12 +7,16 @@ import {
   Linking,
   ScrollView,
   Alert,
+  Image,
 } from 'react-native';
 import { useTheme, THEME_MODES, TYPE_ACCENTS } from '../context/ThemeContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { getOfflineCacheStats, clearOfflineCache } from '../services/offlineStorage';
-import { PokeBallLoading } from '../components/PokeBallLoading';
 import { Ionicons } from '@expo/vector-icons';
+import { PikachuFaceWidget } from '../components/PikachuFaceTheme';
+import { PikachuStickerBackground } from '../components/PikachuStickerBackground';
+import { PikachuLoader } from '../components/PikachuLoader';
+import { PikachuFace } from '../components/PikachuFace';
 
 export const SettingsScreen = () => {
   const {
@@ -37,7 +41,6 @@ export const SettingsScreen = () => {
     totalEntries: 0,
   });
   const [clearing, setClearing] = useState(false);
-  const [showDemoLoader, setShowDemoLoader] = useState(false);
 
   const loadStats = async () => {
     const stats = await getOfflineCacheStats();
@@ -51,7 +54,7 @@ export const SettingsScreen = () => {
   const handleClearCache = () => {
     Alert.alert(
       'Clear Offline Cache',
-      'This will remove cached Pokémon details from local storage. Favorited Pokémon IDs and team lists will not be deleted.',
+      'This will remove cached Pokémon details from local storage. Your favorites and teams will be preserved.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -62,81 +65,138 @@ export const SettingsScreen = () => {
             await clearOfflineCache();
             await loadStats();
             setClearing(false);
-            Alert.alert('Cache Cleared', 'Local offline API cache has been successfully reset.');
+            Alert.alert('Cache Cleared', 'Offline storage has been reset.');
           },
         },
       ]
     );
   };
 
-  const openPokeApi = () => {
-    Linking.openURL('https://pokeapi.co');
-  };
-
-  const openExpo = () => {
-    Linking.openURL('https://expo.dev');
+  const openPokeApi = async () => {
+    const url = 'https://pokeapi.co';
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Notice', 'Cannot open browser on this device.');
+      }
+    } catch (e) {
+      console.warn('Failed to open external link safely', e);
+    }
   };
 
   const themeOptions = [
     {
+      id: THEME_MODES.PIKACHU,
+      name: 'Pikachu Theme',
+      desc: 'Pikachu faces, patterns & loader',
+      icon: 'flash',
+      color: '#FFD700',
+    },
+    {
+      id: THEME_MODES.ARCEUS,
+      name: 'Arceus Divine',
+      desc: 'Hisui celestial ether & gold',
+      icon: 'sparkles-outline',
+      color: '#E6C25B',
+    },
+    {
       id: THEME_MODES.POKEDEX_RED,
       name: 'Pokédex Red',
-      desc: 'Classic scarlet casing & cyan scanner',
+      desc: 'Classic scarlet casing',
       icon: 'radio-outline',
       color: '#DC0A2D',
     },
     {
       id: THEME_MODES.AMOLED,
       name: 'Dark AMOLED',
-      desc: 'Pure #000000 pitch-black OLED mode',
+      desc: 'Pitch-black OLED',
       icon: 'contrast-outline',
       color: '#000000',
     },
     {
       id: THEME_MODES.DARK,
       name: 'Dark Mode',
-      desc: 'Deep navy charcoal surfaces',
+      desc: 'Deep charcoal navy',
       icon: 'moon-outline',
       color: '#1A1A1E',
     },
     {
       id: THEME_MODES.LIGHT,
       name: 'Light Mode',
-      desc: 'Clean paper white aesthetic',
+      desc: 'Clean paper aesthetic',
       icon: 'sunny-outline',
       color: '#FFFFFF',
     },
   ];
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.content}>
-        {/* ── Section 1: Custom Pokédex Themes ── */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
-            CUSTOM POKÉDEX THEMES
-          </Text>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      {theme.isPikachu && <PikachuStickerBackground opacity={0.22} />}
+      {/* ── Section 1: Themes ── */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
+          APPEARANCE
+        </Text>
 
-          {/* Theme Mode Cards Grid */}
-          <View style={styles.themeModeGrid}>
-            {themeOptions.map(opt => {
-              const isSelected = themeMode === opt.id;
-              return (
-                <TouchableOpacity
-                  key={opt.id}
-                  style={[
-                    styles.themeModeCard,
-                    {
-                      backgroundColor: theme.colors.card,
-                      borderColor: isSelected ? theme.colors.primary : theme.colors.border,
-                      borderWidth: isSelected ? 2 : 1,
-                    },
-                    isSelected && { shadowColor: theme.colors.primary, elevation: 4 },
-                  ]}
-                  onPress={() => changeThemeMode(opt.id)}
-                  activeOpacity={0.75}
-                >
-                  <View style={styles.themeCardTop}>
+        <View style={styles.themeModeGrid}>
+          {themeOptions.map(opt => {
+            const isSelected = themeMode === opt.id;
+            return (
+              <TouchableOpacity
+                key={opt.id}
+                style={[
+                  styles.themeModeCard,
+                  {
+                    backgroundColor: theme.colors.card,
+                    borderColor: isSelected ? theme.colors.primary : theme.colors.border,
+                    borderWidth: isSelected ? 2 : 1,
+                  },
+                ]}
+                onPress={() => changeThemeMode(opt.id)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.themeCardTop}>
+                  {opt.id === THEME_MODES.PIKACHU ? (
+                    <View
+                      style={[
+                        styles.colorSampleBubble,
+                        {
+                          backgroundColor: '#FFD700',
+                          borderColor: '#4A3B08',
+                          overflow: 'hidden',
+                        },
+                      ]}
+                    >
+                      <Image
+                        source={require('../../assets/pikachu-face.png')}
+                        style={{ width: 22, height: 22, borderRadius: 11 }}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  ) : opt.id === THEME_MODES.ARCEUS ? (
+                    <View
+                      style={[
+                        styles.colorSampleBubble,
+                        {
+                          backgroundColor: opt.color,
+                          borderColor: '#DFC16E',
+                          overflow: 'hidden',
+                        },
+                      ]}
+                    >
+                      <Image
+                        source={require('../../assets/legends-arceus-pokedex.png')}
+                        style={{ width: 20, height: 20, borderRadius: 4 }}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  ) : (
                     <View
                       style={[
                         styles.colorSampleBubble,
@@ -148,230 +208,158 @@ export const SettingsScreen = () => {
                     >
                       <Ionicons
                         name={opt.icon}
-                        size={16}
+                        size={15}
                         color={opt.id === THEME_MODES.LIGHT ? '#2D3748' : '#FFFFFF'}
                       />
                     </View>
+                  )}
 
-                    {isSelected && (
-                      <View style={[styles.selectedPill, { backgroundColor: theme.colors.primary }]}>
-                        <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-                      </View>
-                    )}
-                  </View>
+                  {isSelected && (
+                    <View style={[styles.selectedPill, { backgroundColor: theme.colors.primary }]}>
+                      <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                    </View>
+                  )}
+                </View>
 
-                  <Text style={[styles.themeCardTitle, { color: theme.colors.text }]}>
-                    {opt.name}
-                  </Text>
-                  <Text style={[styles.themeCardDesc, { color: theme.colors.textSecondary }]}>
-                    {opt.desc}
+                <Text style={[styles.themeCardTitle, { color: theme.colors.text }]}>
+                  {opt.name}
+                </Text>
+                <Text style={[styles.themeCardDesc, { color: theme.colors.textSecondary }]}>
+                  {opt.desc}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Live Interactive Pikachu Face Widget when in Pikachu Mode */}
+        {theme.isPikachu && (
+          <View style={{ marginTop: 14 }}>
+            <PikachuFaceWidget />
+          </View>
+        )}
+      </View>
+
+      {/* ── Section 2: Accent Color ── */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
+          ACCENT COLOR
+        </Text>
+
+        <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+          <View style={styles.accentChipsGrid}>
+            {Object.entries(TYPE_ACCENTS).map(([key, item]) => {
+              const isSelected = accentKey === key;
+              return (
+                <TouchableOpacity
+                  key={`accent-${key}`}
+                  style={[
+                    styles.accentChip,
+                    {
+                      backgroundColor: isSelected ? `${item.color}22` : (theme.dark ? '#252B36' : '#F1F5F9'),
+                      borderColor: isSelected ? item.color : theme.colors.border,
+                      borderWidth: isSelected ? 2 : 1,
+                    },
+                  ]}
+                  onPress={() => changeAccent(key)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.accentColorDot, { backgroundColor: item.color }]} />
+                  <Text
+                    style={[
+                      styles.accentChipText,
+                      { color: isSelected ? item.color : theme.colors.text },
+                      isSelected && { fontWeight: '800' },
+                    ]}
+                  >
+                    {item.name}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
         </View>
+      </View>
 
-        {/* ── Section 2: Type-Based Accent Colors ── */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
-            TYPE-BASED ACCENT COLORS
-          </Text>
+      {/* ── Section 3: Storage & Offline Data ── */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
+          STORAGE & OFFLINE DATA
+        </Text>
 
-          <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-            <View style={styles.accentIntroRow}>
-              <Ionicons name="color-palette-outline" size={20} color={theme.colors.primary} />
-              <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={[styles.accentIntroTitle, { color: theme.colors.text }]}>
-                  Elemental Accent: {TYPE_ACCENTS[accentKey]?.name || 'Classic'}
-                </Text>
-                <Text style={[styles.accentIntroSub, { color: theme.colors.textSecondary }]}>
-                  Applies dynamic highlight tones across buttons, badges, and meters
-                </Text>
-              </View>
-            </View>
-
-            {/* Accent Chips Grid */}
-            <View style={styles.accentChipsGrid}>
-              {Object.entries(TYPE_ACCENTS).map(([key, item]) => {
-                const isSelected = accentKey === key;
-                return (
-                  <TouchableOpacity
-                    key={`accent-${key}`}
-                    style={[
-                      styles.accentChip,
-                      {
-                        backgroundColor: isSelected ? `${item.color}25` : (theme.dark ? '#252B36' : '#F1F5F9'),
-                        borderColor: isSelected ? item.color : theme.colors.border,
-                        borderWidth: isSelected ? 2 : 1,
-                      },
-                    ]}
-                    onPress={() => changeAccent(key)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[styles.accentColorDot, { backgroundColor: item.color }]} />
-                    <Text
-                      style={[
-                        styles.accentChipText,
-                        { color: isSelected ? item.color : theme.colors.text },
-                        isSelected && { fontWeight: '800' },
-                      ]}
-                    >
-                      {item.name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        </View>
-
-        {/* ── Section 3: Animated Poké Ball Loading Preview ── */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
-            ANIMATED POKÉ BALL LOADER
-          </Text>
-
-          <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, padding: 18, alignItems: 'center' }]}>
-            <PokeBallLoading size={54} message="Syncing Pokédex database..." />
-
-            <View style={[styles.loaderMetaRow, { borderTopColor: theme.colors.border }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name="sparkles" size={16} color="#FFCB05" />
-                <Text style={[styles.loaderMetaText, { color: theme.colors.textSecondary }]}>
-                  Custom spin & glowing LED physics
+        <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+          {/* Status summary */}
+          <View style={[styles.storageStatusRow, { borderBottomColor: theme.colors.border }]}>
+            <View style={styles.storageStatusLeft}>
+              <Ionicons name="cloud-done-outline" size={20} color="#4CAF50" />
+              <View>
+                <Text style={[styles.storageStatusTitle, { color: theme.colors.text }]}>Offline Database</Text>
+                <Text style={[styles.storageStatusSub, { color: theme.colors.textSecondary }]}>
+                  {cacheStats.pokemonCount > 0
+                    ? `${cacheStats.pokemonCount} Pokémon cached locally`
+                    : '1,025 Pokémon indexed & ready'}
                 </Text>
               </View>
-              <View style={[styles.activeEngineBadge, { backgroundColor: `${theme.colors.primary}18`, borderColor: theme.colors.primary }]}>
-                <Text style={[styles.activeEngineBadgeText, { color: theme.colors.primary }]}>ACTIVE</Text>
-              </View>
+            </View>
+            <View style={[styles.statusBadge, { backgroundColor: '#4CAF501C', borderColor: '#4CAF50' }]}>
+              <Text style={styles.statusBadgeText}>READY</Text>
             </View>
           </View>
+
+          {/* Pre-cache Favorites Button */}
+          <TouchableOpacity
+            style={[styles.actionRow, { borderBottomColor: theme.colors.border }]}
+            onPress={precacheAllFavorites}
+            disabled={isPrecaching || favorites.length === 0}
+            activeOpacity={0.7}
+          >
+            <View style={styles.actionRowLeft}>
+              <Ionicons name="download-outline" size={19} color={theme.colors.primary} />
+              <View>
+                <Text style={[styles.actionRowTitle, { color: theme.colors.text }]}>Download Favorites</Text>
+                <Text style={[styles.actionRowSub, { color: theme.colors.textSecondary }]}>
+                  {favorites.length > 0 ? `${favorites.length} Pokémon starred` : 'No favorites to download'}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary} />
+          </TouchableOpacity>
+
+          {/* Clear Cache Button */}
+          <TouchableOpacity
+            style={styles.actionRow}
+            onPress={handleClearCache}
+            disabled={clearing}
+            activeOpacity={0.7}
+          >
+            <View style={styles.actionRowLeft}>
+              <Ionicons name="trash-outline" size={19} color="#FF5252" />
+              <View>
+                <Text style={[styles.actionRowTitle, { color: '#FF5252' }]}>Clear Storage Cache</Text>
+                <Text style={[styles.actionRowSub, { color: theme.colors.textSecondary }]}>
+                  Free up locally stored images and data
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary} />
+          </TouchableOpacity>
         </View>
+      </View>
 
-        {/* ── Section 4: Offline-First Engine ── */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
-            OFFLINE-FIRST ENGINE
-          </Text>
-          <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-            {/* Status Header */}
-            <View style={[styles.cacheHeaderRow, { borderBottomColor: theme.colors.border }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Ionicons name="cloud-offline" size={22} color="#4CAF50" />
-                <View>
-                  <Text style={[styles.cacheHeaderTitle, { color: theme.colors.text }]}>Offline Mode</Text>
-                  <Text style={[styles.cacheHeaderSub, { color: theme.colors.textSecondary }]}>
-                    All 1,000+ Pokémon indexed locally with instant cached responses
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.activeEngineBadge}>
-                <Text style={styles.activeEngineBadgeText}>ACTIVE</Text>
-              </View>
-            </View>
+      {/* ── Section 4: About ── */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
+          ABOUT
+        </Text>
 
-            {/* Cache Stats Grid */}
-            <View style={styles.statsGrid}>
-              <View style={[styles.statBox, { backgroundColor: theme.dark ? '#252D3A' : '#F1F5F9' }]}>
-                <Text style={[styles.statBoxNum, { color: theme.colors.primary }]}>{cacheStats.pokemonCount}</Text>
-                <Text style={[styles.statBoxLabel, { color: theme.colors.textSecondary }]}>Pokémon Cached</Text>
-              </View>
-              <View style={[styles.statBox, { backgroundColor: theme.dark ? '#252D3A' : '#F1F5F9' }]}>
-                <Text style={[styles.statBoxNum, { color: '#00D2D3' }]}>{cacheStats.movesCount}</Text>
-                <Text style={[styles.statBoxLabel, { color: theme.colors.textSecondary }]}>Moves Cached</Text>
-              </View>
-              <View style={[styles.statBox, { backgroundColor: theme.dark ? '#252D3A' : '#F1F5F9' }]}>
-                <Text style={[styles.statBoxNum, { color: '#FF7A00' }]}>{cacheStats.abilitiesCount}</Text>
-                <Text style={[styles.statBoxLabel, { color: theme.colors.textSecondary }]}>Abilities</Text>
-              </View>
-            </View>
-
-            {/* Pre-cache Favorites Button */}
-            <TouchableOpacity
-              style={[styles.cacheActionBtn, { borderTopColor: theme.colors.border }]}
-              onPress={precacheAllFavorites}
-              disabled={isPrecaching || favorites.length === 0}
-              activeOpacity={0.7}
-            >
-              <View style={styles.cacheActionLeft}>
-                <Ionicons name="cloud-download-outline" size={18} color={theme.colors.primary} />
-                <View>
-                  <Text style={[styles.cacheActionTitle, { color: theme.colors.text }]}>Pre-cache All Favorites</Text>
-                  <Text style={[styles.cacheActionSub, { color: theme.colors.textSecondary }]}>
-                    {favorites.length} favorited Pokémon stored locally
-                  </Text>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={theme.colors.textSecondary} />
-            </TouchableOpacity>
-
-            {/* Clear Cache Button */}
-            <TouchableOpacity
-              style={[styles.cacheActionBtn, { borderTopColor: theme.colors.border }]}
-              onPress={handleClearCache}
-              disabled={clearing}
-              activeOpacity={0.7}
-            >
-              <View style={styles.cacheActionLeft}>
-                <Ionicons name="trash-outline" size={18} color="#FF5252" />
-                <View>
-                  <Text style={[styles.cacheActionTitle, { color: '#FF5252' }]}>Clear Offline Cache</Text>
-                  <Text style={[styles.cacheActionSub, { color: theme.colors.textSecondary }]}>
-                    Reset locally stored API responses
-                  </Text>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={theme.colors.textSecondary} />
-            </TouchableOpacity>
+        <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+          <View style={[styles.infoRow, { borderBottomColor: theme.colors.border }]}>
+            <Text style={[styles.infoLabel, { color: theme.colors.textSecondary }]}>Version</Text>
+            <Text style={[styles.infoValue, { color: theme.colors.text }]}>Pokédezz v1.0.0</Text>
           </View>
-        </View>
 
-        {/* ── Section 5: App Information ── */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>APP IDENTITY & SYSTEM</Text>
-          <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-            <View style={[styles.listItem, { borderBottomColor: theme.colors.border }]}>
-              <View style={styles.listItemLeft}>
-                <Ionicons name="phone-portrait-outline" size={20} color={theme.colors.primary} />
-                <Text style={[styles.listItemText, { color: theme.colors.text }]}>App Identity</Text>
-              </View>
-              <Text style={[styles.listItemRight, { color: theme.colors.textSecondary }]}>Pokédex (Raydex v1.0)</Text>
-            </View>
-
-            <View style={[styles.listItem, { borderBottomColor: theme.colors.border }]}>
-              <View style={styles.listItemLeft}>
-                <Ionicons name="hardware-chip-outline" size={20} color={theme.colors.primary} />
-                <Text style={[styles.listItemText, { color: theme.colors.text }]}>Expo Framework</Text>
-              </View>
-              <Text style={[styles.listItemRight, { color: theme.colors.textSecondary }]}>SDK 57.0.0 (Native)</Text>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.listItem, { borderBottomColor: theme.colors.border }]}
-              onPress={openPokeApi}
-            >
-              <View style={styles.listItemLeft}>
-                <Ionicons name="server-outline" size={20} color={theme.colors.primary} />
-                <Text style={[styles.listItemText, { color: theme.colors.text }]}>Data Source</Text>
-              </View>
-              <View style={styles.listItemRightRow}>
-                <Text style={[styles.listItemRightLink, { color: theme.colors.primary }]}>PokeAPI.co</Text>
-                <Ionicons name="open-outline" size={14} color={theme.colors.primary} />
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.listItem} onPress={openExpo}>
-              <View style={styles.listItemLeft}>
-                <Ionicons name="code-slash-outline" size={20} color={theme.colors.primary} />
-                <Text style={[styles.listItemText, { color: theme.colors.text }]}>Runtime</Text>
-              </View>
-              <View style={styles.listItemRightRow}>
-                <Text style={[styles.listItemRightLink, { color: theme.colors.primary }]}>React Native 0.86</Text>
-                <Ionicons name="open-outline" size={14} color={theme.colors.primary} />
-              </View>
-            </TouchableOpacity>
-          </View>
+          
+        
         </View>
       </View>
     </ScrollView>
@@ -387,21 +375,21 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 22,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
     marginBottom: 10,
     letterSpacing: 0.8,
   },
   card: {
-    borderRadius: 18,
+    borderRadius: 14,
     borderWidth: 1,
     overflow: 'hidden',
   },
 
-  // Theme Mode Grid
+  // Themes Grid
   themeModeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -409,198 +397,143 @@ const styles = StyleSheet.create({
   },
   themeModeCard: {
     width: '48.5%',
-    borderRadius: 16,
-    padding: 14,
-    elevation: 2,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    borderRadius: 14,
+    padding: 12,
   },
   themeCardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   colorSampleBubble: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   selectedPill: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
   },
   themeCardTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
-    marginBottom: 3,
+    marginBottom: 2,
   },
   themeCardDesc: {
     fontSize: 11,
-    lineHeight: 15,
+    lineHeight: 14,
   },
 
   // Accent Chips
-  accentIntroRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-  },
-  accentIntroTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  accentIntroSub: {
-    fontSize: 11,
-    marginTop: 1,
-  },
   accentChipsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    padding: 14,
-    paddingTop: 0,
+    padding: 12,
   },
   accentChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 7,
+    paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 10,
+    borderRadius: 8,
   },
   accentColorDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   accentChipText: {
     fontSize: 12,
     fontWeight: '600',
   },
 
-  // Loader Preview
-  loaderMetaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    paddingTop: 12,
-    marginTop: 12,
-    borderTopWidth: 1,
-  },
-  loaderMetaText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-
-  // Cache Engine
-  cacheHeaderRow: {
+  // Storage section
+  storageStatusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
     justifyContent: 'space-between',
+    padding: 14,
     borderBottomWidth: 1,
   },
-  cacheHeaderTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  cacheHeaderSub: {
-    fontSize: 11,
-    marginTop: 2,
-    maxWidth: 220,
-  },
-  activeEngineBadge: {
-    backgroundColor: '#4CAF5020',
-    borderColor: '#4CAF50',
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  activeEngineBadgeText: {
-    fontSize: 9,
-    fontWeight: '900',
-    color: '#4CAF50',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    padding: 12,
-    gap: 8,
-  },
-  statBox: {
-    flex: 1,
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  statBoxNum: {
-    fontSize: 16,
-    fontWeight: '900',
-  },
-  statBoxLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  cacheActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderTopWidth: 1,
-  },
-  cacheActionLeft: {
+  storageStatusLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  cacheActionTitle: {
+  storageStatusTitle: {
     fontSize: 14,
     fontWeight: '700',
   },
-  cacheActionSub: {
+  storageStatusSub: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#4CAF50',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  actionRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  actionRowTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  actionRowSub: {
     fontSize: 11,
     marginTop: 1,
   },
 
-  // List Items
-  listItem: {
+  // About section
+  infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
     borderBottomWidth: 1,
   },
-  listItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  listItemText: {
-    fontSize: 14,
+  infoLabel: {
+    fontSize: 13,
     fontWeight: '600',
   },
-  listItemRight: {
+  infoValue: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '700',
   },
-  listItemRightRow: {
+  linkWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  listItemRightLink: {
+  infoLink: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

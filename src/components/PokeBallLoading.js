@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { PikachuLoader } from './PikachuLoader';
 
 export const PokeBallLoading = ({
   size = 56,
@@ -9,6 +10,16 @@ export const PokeBallLoading = ({
   showBelt = true,
 }) => {
   const { theme } = useTheme();
+
+  if (theme.isPikachu) {
+    return (
+      <PikachuLoader
+        size={size}
+        message={message}
+        fullScreen={fullScreen}
+      />
+    );
+  }
 
   // Animation values
   const rotateAnim = useRef(new Animated.Value(0)).current;

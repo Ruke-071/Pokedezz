@@ -61,6 +61,51 @@ export const DEFENDER_ITEMS = [
   { id: 'resist-berry', name: 'Resist Berry', desc: 'Halves (0.5x) Super Effective move damage' },
 ];
 
+// ─── Attacker Damaging Abilities ──────────────────────────────────────────────
+export const ATTACKER_DAMAGING_ABILITIES = [
+  { id: 'none', name: 'None', desc: 'No offensive ability modifier' },
+  { id: 'adaptability', name: 'Adaptability', desc: 'Boosts STAB bonus from 1.5× to 2.0×' },
+  { id: 'gorilla-tactics', name: 'Gorilla Tactics', desc: '1.5× Attack stat boost to Physical attacks' },
+  { id: 'huge-power', name: 'Huge Power / Pure Power', desc: 'Doubles (2.0×) raw Physical Attack stat' },
+  { id: 'sheer-force', name: 'Sheer Force', desc: '1.3× damage boost to attacks' },
+  { id: 'technician', name: 'Technician', desc: '1.5× damage boost to moves with base power ≤ 60' },
+  { id: 'tough-claws', name: 'Tough Claws', desc: '1.3× damage boost to Physical attacks' },
+  { id: 'guts', name: 'Guts', desc: '1.5× Attack stat boost when burned/statused' },
+  { id: 'tinted-lens', name: 'Tinted Lens', desc: 'Doubles (2.0×) damage of "Not Very Effective" attacks' },
+  { id: 'sharpness', name: 'Sharpness', desc: '1.5× damage boost to slicing & blade attacks' },
+  { id: 'supreme-overlord', name: 'Supreme Overlord', desc: '1.5× damage boost (max 5 fainted allies)' },
+  { id: 'sword-of-ruin', name: 'Sword of Ruin', desc: 'Lowers defender Defense by 25% (1.33× Physical damage)' },
+  { id: 'beads-of-ruin', name: 'Beads of Ruin', desc: 'Lowers defender Sp. Def by 25% (1.33× Special damage)' },
+  { id: 'sniper', name: 'Sniper', desc: 'Critical hits deal 2.25× damage instead of 1.5×' },
+  { id: 'hustle', name: 'Hustle', desc: '1.5× Attack stat boost to Physical attacks' },
+  { id: 'neuroforce', name: 'Neuroforce', desc: '1.25× damage boost to Super Effective hits' },
+  { id: 'transistor', name: 'Transistor', desc: '1.3× damage boost to Electric attacks' },
+  { id: 'dragons-maw', name: "Dragon's Maw", desc: '1.5× damage boost to Dragon attacks' },
+  { id: 'steelworker', name: 'Steelworker', desc: '1.5× damage boost to Steel attacks' },
+  { id: 'rocky-payload', name: 'Rocky Payload', desc: '1.5× damage boost to Rock attacks' },
+  { id: 'blaze', name: 'Blaze (Pinch)', desc: '1.5× damage boost to Fire attacks at low HP' },
+  { id: 'torrent', name: 'Torrent (Pinch)', desc: '1.5× damage boost to Water attacks at low HP' },
+  { id: 'overgrow', name: 'Overgrow (Pinch)', desc: '1.5× damage boost to Grass attacks at low HP' },
+  { id: 'solar-power', name: 'Solar Power', desc: '1.5× Sp. Atk stat boost under Harsh Sunlight' },
+  { id: 'quark-drive', name: 'Quark Drive / Protosynthesis', desc: '1.3× boost to highest offensive stat' },
+  { id: 'water-bubble', name: 'Water Bubble', desc: 'Doubles (2.0×) Water move damage' },
+];
+
+// ─── Defender Defensive / Damage Mitigation Abilities ──────────────────────────
+export const DEFENDER_DAMAGING_ABILITIES = [
+  { id: 'none', name: 'None', desc: 'No defensive ability modifier' },
+  { id: 'multiscale', name: 'Multiscale / Shadow Shield', desc: 'Halves (0.5×) damage taken at 100% full HP' },
+  { id: 'solid-rock', name: 'Solid Rock / Filter / Prism Armor', desc: 'Reduces Super Effective damage by 25% (0.75×)' },
+  { id: 'fluffy', name: 'Fluffy', desc: 'Halves (0.5×) Physical damage taken, 2.0× from Fire' },
+  { id: 'ice-scales', name: 'Ice Scales', desc: 'Halves (0.5×) damage taken from Special attacks' },
+  { id: 'fur-coat', name: 'Fur Coat', desc: 'Doubles (2.0×) raw Defense stat against Physical moves' },
+  { id: 'thick-fat', name: 'Thick Fat', desc: 'Halves (0.5×) damage taken from Fire and Ice moves' },
+  { id: 'purifying-salt', name: 'Purifying Salt', desc: 'Halves (0.5×) damage taken from Ghost attacks' },
+  { id: 'heatproof', name: 'Heatproof', desc: 'Halves (0.5×) damage taken from Fire attacks' },
+  { id: 'tablets-of-ruin', name: 'Tablets of Ruin', desc: 'Lowers attacker Attack by 25% (0.75×)' },
+  { id: 'vessel-of-ruin', name: 'Vessel of Ruin', desc: 'Lowers attacker Sp. Atk by 25% (0.75×)' },
+];
+
 // ─── Curated Competitive Moves Database (100+ Moves) ──────────────────────────
 export const COMPETITIVE_MOVES = [
   // Normal
@@ -217,8 +262,9 @@ export const COMPETITIVE_MOVES = [
 
 // ─── Calculate Move Type Effectiveness Against Dual Types ─────────────────────
 export const calculateTypeEffectiveness = (moveType, defenderTypes = [], defenderAbility = 'none') => {
-  if (!moveType || defenderTypes.length === 0) return 1.0;
-  const mt = moveType.toLowerCase();
+  if (!moveType || !Array.isArray(defenderTypes) || defenderTypes.length === 0) return 1.0;
+  const mt = (typeof moveType === 'string' ? moveType : (moveType?.name || moveType?.type?.name || '')).toLowerCase();
+  if (!mt) return 1.0;
 
   // Ability Immunities
   if (defenderAbility === 'levitate' && mt === 'ground') return 0;
@@ -231,15 +277,16 @@ export const calculateTypeEffectiveness = (moveType, defenderTypes = [], defende
   let multiplier = 1.0;
 
   defenderTypes.forEach(dt => {
-    const targetType = dt.toLowerCase();
+    const targetType = (typeof dt === 'string' ? dt : (dt?.name || dt?.type?.name || '')).toLowerCase();
+    if (!targetType) return;
     const eff = TYPE_EFFECTIVENESS[targetType];
     if (!eff) return;
 
-    if (eff.noDamageFrom.includes(mt)) {
+    if (eff.noDamageFrom && eff.noDamageFrom.includes(mt)) {
       multiplier *= 0;
-    } else if (eff.doubleDamageFrom.includes(mt)) {
+    } else if (eff.doubleDamageFrom && eff.doubleDamageFrom.includes(mt)) {
       multiplier *= 2;
-    } else if (eff.halfDamageFrom.includes(mt)) {
+    } else if (eff.halfDamageFrom && eff.halfDamageFrom.includes(mt)) {
       multiplier *= 0.5;
     }
   });
@@ -310,6 +357,8 @@ export const calculateBattleDamage = ({
   isDoubles = false,
 }) => {
   if (!attacker || !defender || !move || !move.power || move.power <= 0) {
+    const atkSpd = attacker?.stats?.speed || 0;
+    const defSpd = defender?.stats?.speed || 0;
     return {
       damageRolls: [0],
       minDamage: 0,
@@ -320,19 +369,28 @@ export const calculateBattleDamage = ({
       isStab: false,
       koDescription: 'No damage dealt',
       hitsToKo: null,
-      attackerSpeed: 0,
-      defenderSpeed: 0,
-      speedAdvantage: 'tie',
+      attackerSpeed: atkSpd,
+      defenderSpeed: defSpd,
+      speedAdvantage: atkSpd > defSpd ? 'attacker' : defSpd > atkSpd ? 'defender' : 'tie',
+      defenderMaxHp: defender?.stats?.hp || 1,
     };
   }
 
   const level = attacker.level || 100;
   const power = Number(move.power) || 50;
   const isPhysical = move.category === 'physical';
+  const activeAbilityEffects = [];
 
-  // 1. Raw Stats
-  let attackStat = isPhysical ? attacker.stats.attack : attacker.stats.spAtk;
-  let defenseStat = isPhysical ? defender.stats.defense : defender.stats.spDef;
+  // 1. Raw Stats (safely extract from stats object or root with fallback)
+  let rawAttack = isPhysical
+    ? (attacker.stats?.attack ?? attacker.attack)
+    : (attacker.stats?.spAtk ?? attacker.stats?.specialAttack ?? attacker.spAtk ?? attacker.specialAttack);
+  let rawDefense = isPhysical
+    ? (defender.stats?.defense ?? defender.defense)
+    : (defender.stats?.spDef ?? defender.stats?.specialDefense ?? defender.spDef ?? defender.specialDefense);
+
+  let attackStat = Math.max(1, Number(rawAttack) || 50);
+  let defenseStat = Math.max(1, Number(rawDefense) || 50);
 
   // 2. Stat Stages (-6 to +6)
   // On crits, negative attack stages and positive defense stages are ignored
@@ -347,22 +405,59 @@ export const calculateBattleDamage = ({
   defenseStat = getEffectiveStat(defenseStat, effectiveDefenderStage);
 
   // 3. Ability boosts to raw stats
-  if (attackerAbility === 'huge-power' || attackerAbility === 'pure-power') {
-    if (isPhysical) attackStat *= 2;
+  if ((attackerAbility === 'huge-power' || attackerAbility === 'pure-power') && isPhysical) {
+    attackStat *= 2;
+    activeAbilityEffects.push({ name: 'Huge Power', multiplier: '2.0× Atk' });
   }
-  if (attackerAbility === 'guts' && isBurned && isPhysical) {
+  if (attackerAbility === 'gorilla-tactics' && isPhysical) {
     attackStat = Math.floor(attackStat * 1.5);
+    activeAbilityEffects.push({ name: 'Gorilla Tactics', multiplier: '1.5× Atk' });
+  }
+  if (attackerAbility === 'hustle' && isPhysical) {
+    attackStat = Math.floor(attackStat * 1.5);
+    activeAbilityEffects.push({ name: 'Hustle', multiplier: '1.5× Atk' });
+  }
+  if (attackerAbility === 'guts' && isPhysical && isBurned) {
+    attackStat = Math.floor(attackStat * 1.5);
+    activeAbilityEffects.push({ name: 'Guts', multiplier: '1.5× Atk' });
+  }
+  if (attackerAbility === 'solar-power' && !isPhysical && weather === 'sun') {
+    attackStat = Math.floor(attackStat * 1.5);
+    activeAbilityEffects.push({ name: 'Solar Power', multiplier: '1.5× SpA' });
+  }
+  if (attackerAbility === 'quark-drive' || attackerAbility === 'protosynthesis') {
+    attackStat = Math.floor(attackStat * 1.3);
+    activeAbilityEffects.push({ name: 'Quark Drive', multiplier: '1.3× Stat' });
+  }
+
+  // Ruin abilities
+  if (attackerAbility === 'sword-of-ruin' && isPhysical) {
+    defenseStat = Math.max(1, Math.floor(defenseStat * 0.75));
+    activeAbilityEffects.push({ name: 'Sword of Ruin', multiplier: '-25% Def' });
+  }
+  if (attackerAbility === 'beads-of-ruin' && !isPhysical) {
+    defenseStat = Math.max(1, Math.floor(defenseStat * 0.75));
+    activeAbilityEffects.push({ name: 'Beads of Ruin', multiplier: '-25% SpD' });
+  }
+  if (defenderAbility === 'tablets-of-ruin' && isPhysical) {
+    attackStat = Math.max(1, Math.floor(attackStat * 0.75));
+    activeAbilityEffects.push({ name: 'Tablets of Ruin', multiplier: '-25% Atk' });
+  }
+  if (defenderAbility === 'vessel-of-ruin' && !isPhysical) {
+    attackStat = Math.max(1, Math.floor(attackStat * 0.75));
+    activeAbilityEffects.push({ name: 'Vessel of Ruin', multiplier: '-25% SpA' });
   }
 
   // Defender Ability/Weather stat boosts
+  if (defenderAbility === 'fur-coat' && isPhysical) {
+    defenseStat *= 2;
+    activeAbilityEffects.push({ name: 'Fur Coat', multiplier: '2.0× Def' });
+  }
   if (weather === 'sandstorm' && defender.types.includes('rock') && !isPhysical) {
     defenseStat = Math.floor(defenseStat * 1.5);
   }
   if (weather === 'snow' && defender.types.includes('ice') && isPhysical) {
     defenseStat = Math.floor(defenseStat * 1.5);
-  }
-  if (defenderAbility === 'thick-fat' && (move.type === 'fire' || move.type === 'ice')) {
-    attackStat = Math.floor(attackStat * 0.5);
   }
 
   // 4. Item stat boosts
@@ -379,7 +474,6 @@ export const calculateBattleDamage = ({
   }
 
   // 5. Base Damage Formula
-  // ( (2 * Level / 5 + 2) * Power * Attack / Defense ) / 50 + 2
   let baseDamage = Math.floor(
     (Math.floor((2 * level) / 5 + 2) * power * attackStat) / Math.max(1, defenseStat)
   );
@@ -401,20 +495,35 @@ export const calculateBattleDamage = ({
   }
   baseDamage = Math.floor(baseDamage * weatherMult);
 
-  // 8. Critical Hit (1.5x in Gen 6+)
+  // 8. Critical Hit (Sniper: 2.25x, Standard: 1.5x)
   if (isCrit) {
-    baseDamage = Math.floor(baseDamage * 1.5);
+    const critMult = attackerAbility === 'sniper' ? 2.25 : 1.5;
+    baseDamage = Math.floor(baseDamage * critMult);
+    if (attackerAbility === 'sniper') {
+      activeAbilityEffects.push({ name: 'Sniper', multiplier: '2.25× Crit' });
+    }
   }
 
-  // 9. STAB (Same Type Attack Bonus)
-  const isStab = attacker.types.some(t => t.toLowerCase() === move.type.toLowerCase());
+  // 9. STAB (Same Type Attack Bonus, Adaptability: 2.0x, Standard: 1.5x)
+  const attackerTypes = (Array.isArray(attacker.types) ? attacker.types : []).map(t =>
+    (typeof t === 'string' ? t : (t?.name || t?.type?.name || '')).toLowerCase()
+  ).filter(Boolean);
+  const moveTypeLower = (typeof move?.type === 'string' ? move.type : (move?.type?.name || '')).toLowerCase();
+  const moveNameLower = (typeof move?.name === 'string' ? move.name : '').toLowerCase();
+
+  const isStab = moveTypeLower ? attackerTypes.includes(moveTypeLower) : false;
   let stabMult = 1.0;
   if (isStab) {
-    stabMult = attackerAbility === 'adaptability' ? 2.0 : 1.5;
+    if (attackerAbility === 'adaptability') {
+      stabMult = 2.0;
+      activeAbilityEffects.push({ name: 'Adaptability', multiplier: '2.0× STAB' });
+    } else {
+      stabMult = 1.5;
+    }
   }
 
   // 10. Type Effectiveness Multiplier
-  const effectiveness = calculateTypeEffectiveness(move.type, defender.types, defenderAbility);
+  const effectiveness = calculateTypeEffectiveness(moveTypeLower, defender.types, defenderAbility);
 
   // If immune, damage is 0
   if (effectiveness === 0) {
@@ -426,10 +535,11 @@ export const calculateBattleDamage = ({
       maxPercent: 0,
       effectiveness: 0,
       isStab,
+      activeAbilityEffects,
       koDescription: 'Does not affect ' + (defender.name || 'target') + ' (0x)',
       hitsToKo: null,
-      attackerSpeed: attacker.stats.speed,
-      defenderSpeed: defender.stats.speed,
+      attackerSpeed: Math.max(1, Number(attacker.stats?.speed ?? attacker.speed) || 50),
+      defenderSpeed: Math.max(1, Number(defender.stats?.speed ?? defender.speed) || 50),
       speedAdvantage: 'tie',
     };
   }
@@ -449,13 +559,13 @@ export const calculateBattleDamage = ({
 
   // 13. Terrain Modifiers
   let terrainMult = 1.0;
-  if (terrain === 'electric' && move.type === 'electric') terrainMult = 1.3;
+  if (terrain === 'electric' && moveTypeLower === 'electric') terrainMult = 1.3;
   if (terrain === 'grassy') {
-    if (move.type === 'grass') terrainMult = 1.3;
-    if (['earthquake', 'bulldoze', 'magnitude'].includes(move.name.toLowerCase())) terrainMult = 0.5;
+    if (moveTypeLower === 'grass') terrainMult = 1.3;
+    if (['earthquake', 'bulldoze', 'magnitude'].includes(moveNameLower)) terrainMult = 0.5;
   }
-  if (terrain === 'psychic' && move.type === 'psychic') terrainMult = 1.3;
-  if (terrain === 'misty' && move.type === 'dragon') terrainMult = 0.5;
+  if (terrain === 'psychic' && moveTypeLower === 'psychic') terrainMult = 1.3;
+  if (terrain === 'misty' && moveTypeLower === 'dragon') terrainMult = 0.5;
 
   // 14. Other Item Modifiers
   let itemDamageMult = 1.0;
@@ -469,30 +579,125 @@ export const calculateBattleDamage = ({
     itemDamageMult *= 0.5;
   }
 
-  // 15. Other Ability Modifiers
+  // 15. Damaging & Mitigation Abilities
   let abilityDamageMult = 1.0;
-  if (attackerAbility === 'sheer-force') abilityDamageMult *= 1.3;
-  if (attackerAbility === 'tinted-lens' && effectiveness < 1.0) abilityDamageMult *= 2.0;
-  if (attackerAbility === 'technician' && power <= 60) abilityDamageMult *= 1.5;
+  if (attackerAbility === 'sheer-force') {
+    abilityDamageMult *= 1.3;
+    activeAbilityEffects.push({ name: 'Sheer Force', multiplier: '1.3×' });
+  }
+  if (attackerAbility === 'tough-claws' && isPhysical) {
+    abilityDamageMult *= 1.3;
+    activeAbilityEffects.push({ name: 'Tough Claws', multiplier: '1.3×' });
+  }
+  if (attackerAbility === 'technician' && power <= 60) {
+    abilityDamageMult *= 1.5;
+    activeAbilityEffects.push({ name: 'Technician', multiplier: '1.5×' });
+  }
+  if (attackerAbility === 'tinted-lens' && effectiveness < 1.0) {
+    abilityDamageMult *= 2.0;
+    activeAbilityEffects.push({ name: 'Tinted Lens', multiplier: '2.0×' });
+  }
+  const SLICING_MOVES = [
+    'bitter blade', 'sacred sword', 'aqua cutter', 'leaf blade', 'air slash',
+    'night slash', 'slash', 'psycho cut', 'stone axe', 'ceaseless edge',
+    'kowtow cleave', 'cross poison', 'x-scissor', 'solar blade', 'air cutter'
+  ];
+  if (attackerAbility === 'sharpness' && SLICING_MOVES.includes(moveNameLower)) {
+    abilityDamageMult *= 1.5;
+    activeAbilityEffects.push({ name: 'Sharpness', multiplier: '1.5×' });
+  }
+  if (attackerAbility === 'supreme-overlord') {
+    abilityDamageMult *= 1.5;
+    activeAbilityEffects.push({ name: 'Supreme Overlord', multiplier: '1.5×' });
+  }
+  if (attackerAbility === 'neuroforce' && effectiveness > 1.0) {
+    abilityDamageMult *= 1.25;
+    activeAbilityEffects.push({ name: 'Neuroforce', multiplier: '1.25×' });
+  }
+  if (attackerAbility === 'transistor' && move.type === 'electric') {
+    abilityDamageMult *= 1.3;
+    activeAbilityEffects.push({ name: 'Transistor', multiplier: '1.3×' });
+  }
+  if (attackerAbility === 'dragons-maw' && move.type === 'dragon') {
+    abilityDamageMult *= 1.5;
+    activeAbilityEffects.push({ name: "Dragon's Maw", multiplier: '1.5×' });
+  }
+  if (attackerAbility === 'steelworker' && move.type === 'steel') {
+    abilityDamageMult *= 1.5;
+    activeAbilityEffects.push({ name: 'Steelworker', multiplier: '1.5×' });
+  }
+  if (attackerAbility === 'rocky-payload' && move.type === 'rock') {
+    abilityDamageMult *= 1.5;
+    activeAbilityEffects.push({ name: 'Rocky Payload', multiplier: '1.5×' });
+  }
+  if (attackerAbility === 'water-bubble' && move.type === 'water') {
+    abilityDamageMult *= 2.0;
+    activeAbilityEffects.push({ name: 'Water Bubble', multiplier: '2.0×' });
+  }
+  if (attackerAbility === 'blaze' && move.type === 'fire') {
+    abilityDamageMult *= 1.5;
+    activeAbilityEffects.push({ name: 'Blaze (Pinch)', multiplier: '1.5×' });
+  }
+  if (attackerAbility === 'torrent' && move.type === 'water') {
+    abilityDamageMult *= 1.5;
+    activeAbilityEffects.push({ name: 'Torrent (Pinch)', multiplier: '1.5×' });
+  }
+  if (attackerAbility === 'overgrow' && move.type === 'grass') {
+    abilityDamageMult *= 1.5;
+    activeAbilityEffects.push({ name: 'Overgrow (Pinch)', multiplier: '1.5×' });
+  }
 
+  // Defender Mitigation Abilities
   if (['solid-rock', 'filter', 'prism-armor'].includes(defenderAbility) && effectiveness > 1.0) {
     abilityDamageMult *= 0.75;
+    activeAbilityEffects.push({ name: 'Solid Rock', multiplier: '0.75×' });
   }
   if (['multiscale', 'shadow-shield'].includes(defenderAbility)) {
     abilityDamageMult *= 0.5; // At 100% HP
+    activeAbilityEffects.push({ name: 'Multiscale', multiplier: '0.5×' });
+  }
+  if (defenderAbility === 'fluffy') {
+    if (isPhysical) {
+      abilityDamageMult *= 0.5;
+      activeAbilityEffects.push({ name: 'Fluffy', multiplier: '0.5× Phys' });
+    }
+    if (move.type === 'fire') {
+      abilityDamageMult *= 2.0;
+      activeAbilityEffects.push({ name: 'Fluffy', multiplier: '2.0× Fire' });
+    }
+  }
+  if (defenderAbility === 'ice-scales' && !isPhysical) {
+    abilityDamageMult *= 0.5;
+    activeAbilityEffects.push({ name: 'Ice Scales', multiplier: '0.5× Spc' });
+  }
+  if (defenderAbility === 'thick-fat' && (move.type === 'fire' || move.type === 'ice')) {
+    abilityDamageMult *= 0.5;
+    activeAbilityEffects.push({ name: 'Thick Fat', multiplier: '0.5×' });
+  }
+  if (defenderAbility === 'heatproof' && move.type === 'fire') {
+    abilityDamageMult *= 0.5;
+    activeAbilityEffects.push({ name: 'Heatproof', multiplier: '0.5×' });
+  }
+  if (defenderAbility === 'purifying-salt' && move.type === 'ghost') {
+    abilityDamageMult *= 0.5;
+    activeAbilityEffects.push({ name: 'Purifying Salt', multiplier: '0.5×' });
+  }
+  if (defenderAbility === 'water-bubble' && move.type === 'fire') {
+    abilityDamageMult *= 0.5;
+    activeAbilityEffects.push({ name: 'Water Bubble', multiplier: '0.5× Fire' });
   }
 
   // Combine multipliers into the pre-roll base
   const totalMult = stabMult * effectiveness * burnMult * screenMult * terrainMult * itemDamageMult * abilityDamageMult;
 
   // 16. Calculate all 16 Random Rolls (85% to 100%)
-  const defenderMaxHp = Math.max(1, defender.stats.hp);
+  const defenderMaxHp = Math.max(1, Number(defender.stats?.hp ?? defender.hp) || 100);
   const damageRolls = [];
 
   for (let r = 85; r <= 100; r++) {
     let rollDamage = Math.floor((baseDamage * r) / 100);
     rollDamage = Math.floor(rollDamage * totalMult);
-    rollDamage = Math.max(1, rollDamage); // At least 1 damage if not immune
+    rollDamage = Math.max(1, Number(rollDamage) || 1); // At least 1 damage if not immune
 
     // Focus Sash check (can't OHKO from full HP)
     if (defenderItem === 'focus-sash' && rollDamage >= defenderMaxHp) {
@@ -502,11 +707,13 @@ export const calculateBattleDamage = ({
     damageRolls.push(rollDamage);
   }
 
-  const minDamage = damageRolls[0];
-  const maxDamage = damageRolls[damageRolls.length - 1];
+  const minDamage = Number(damageRolls[0]) || 0;
+  const maxDamage = Number(damageRolls[damageRolls.length - 1]) || 0;
 
-  const minPercent = Number(((minDamage / defenderMaxHp) * 100).toFixed(1));
-  const maxPercent = Number(((maxDamage / defenderMaxHp) * 100).toFixed(1));
+  const rawMinPct = (minDamage / defenderMaxHp) * 100;
+  const rawMaxPct = (maxDamage / defenderMaxHp) * 100;
+  const minPercent = Number.isFinite(rawMinPct) ? Number(rawMinPct.toFixed(1)) : 0;
+  const maxPercent = Number.isFinite(rawMaxPct) ? Number(rawMaxPct.toFixed(1)) : 0;
 
   // 17. Calculate KO Probability
   let koDescription = '';
@@ -538,16 +745,26 @@ export const calculateBattleDamage = ({
       koDescription = `${twoHkoChance}% chance to 2HKO`;
       hitsToKo = 2;
     } else {
-      const minHits = Math.ceil(defenderMaxHp / maxDamage);
-      const maxHits = Math.ceil(defenderMaxHp / minDamage);
-      hitsToKo = minHits;
-      koDescription = minHits === maxHits ? `Guaranteed ${minHits}HKO` : `Possible ${minHits}-${maxHits}HKO`;
+      if (maxDamage <= 0 || minDamage <= 0) {
+        koDescription = 'Cannot KO';
+        hitsToKo = null;
+      } else {
+        const minHits = Math.ceil(defenderMaxHp / maxDamage);
+        const maxHits = Math.ceil(defenderMaxHp / minDamage);
+        if (Number.isFinite(minHits) && Number.isFinite(maxHits)) {
+          hitsToKo = minHits;
+          koDescription = minHits === maxHits ? `Guaranteed ${minHits}HKO` : `Possible ${minHits}-${maxHits}HKO`;
+        } else {
+          koDescription = 'Cannot KO';
+          hitsToKo = null;
+        }
+      }
     }
   }
 
   // 18. Speed Advantage Calculation
-  let attackerSpeed = attacker.stats.speed;
-  let defenderSpeed = defender.stats.speed;
+  let attackerSpeed = Math.max(1, Number(attacker.stats?.speed ?? attacker.speed) || 50);
+  let defenderSpeed = Math.max(1, Number(defender.stats?.speed ?? defender.speed) || 50);
 
   if (attackerItem === 'choice-scarf') attackerSpeed = Math.floor(attackerSpeed * 1.5);
   if (defenderItem === 'choice-scarf') defenderSpeed = Math.floor(defenderSpeed * 1.5);
@@ -564,6 +781,7 @@ export const calculateBattleDamage = ({
     maxPercent,
     effectiveness,
     isStab,
+    activeAbilityEffects,
     koDescription,
     hitsToKo,
     attackerSpeed,

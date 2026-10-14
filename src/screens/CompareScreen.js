@@ -17,6 +17,8 @@ import { pokemonIndex } from '../data/pokemonIndex';
 import { TYPE_COLORS } from '../components/FilterModal';
 import { Ionicons } from '@expo/vector-icons';
 import { PokeBallLoading } from '../components/PokeBallLoading';
+import { matchesPokemonSearch } from '../utils/searchUtils';
+import { PikachuStickerBackground } from '../components/PikachuStickerBackground';
 
 export const CompareScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -40,9 +42,8 @@ export const CompareScreen = ({ navigation }) => {
     if (slot === 1) {
       setSearch1(text);
       if (text.trim().length > 1) {
-        const query = text.toLowerCase().trim();
         const matches = pokemonIndex
-          .filter(p => p.name.includes(query) || String(p.id).includes(query))
+          .filter(p => matchesPokemonSearch(p, text))
           .slice(0, 5);
         setSuggestions1(matches);
       } else {
@@ -51,9 +52,8 @@ export const CompareScreen = ({ navigation }) => {
     } else {
       setSearch2(text);
       if (text.trim().length > 1) {
-        const query = text.toLowerCase().trim();
         const matches = pokemonIndex
-          .filter(p => p.name.includes(query) || String(p.id).includes(query))
+          .filter(p => matchesPokemonSearch(p, text))
           .slice(0, 5);
         setSuggestions2(matches);
       } else {
@@ -154,6 +154,7 @@ export const CompareScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} keyboardShouldPersistTaps="handled">
+      {theme.isPikachu && <PikachuStickerBackground />}
       <View style={styles.content}>
         {/* Selection Area */}
         <View style={styles.selectionSection}>

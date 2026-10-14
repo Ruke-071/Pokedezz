@@ -32,6 +32,21 @@ export const getPokemonIdFromUrl = (url) => {
   return parseInt(parts[parts.length - 2], 10);
 };
 
+// Security sanitizers: Enforce HTTPS and prevent SSRF / arbitrary URL fetching
+export const sanitizePokeApiUrl = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  const secureUrl = url.trim().replace(/^http:\/\//i, 'https://');
+  if (secureUrl.startsWith('https://pokeapi.co/')) {
+    return secureUrl;
+  }
+  return null;
+};
+
+export const ensureHttps = (url) => {
+  if (!url || typeof url !== 'string') return url;
+  return url.trim().replace(/^http:\/\//i, 'https://');
+};
+
 // Local Type Chart for calculating Weaknesses and Resistances offline
 const TYPE_EFFECTIVENESS = {
   normal: {
@@ -401,14 +416,14 @@ const formatPokemonDetails = (data, speciesData = null, encountersData = []) => 
     abilities,
     moves,
     lore,
-    cryUrl,
+    cryUrl: ensureHttps(cryUrl),
     training,
     breeding,
     sprites: {
-      artwork: data.sprites?.other?.['official-artwork']?.front_default,
-      artworkShiny: data.sprites?.other?.['official-artwork']?.front_shiny,
-      spriteDefault: data.sprites?.front_default,
-      spriteShiny: data.sprites?.front_shiny
+      artwork: ensureHttps(data.sprites?.other?.['official-artwork']?.front_default),
+      artworkShiny: ensureHttps(data.sprites?.other?.['official-artwork']?.front_shiny),
+      spriteDefault: ensureHttps(data.sprites?.front_default),
+      spriteShiny: ensureHttps(data.sprites?.front_shiny)
     },
     isCachedData: false,
     isOfflineFallback: false,
@@ -425,7 +440,7 @@ const triggerSilentRefresh = (pokemonId) => {
       const data = response.data;
       let speciesData = null;
       try {
-        const speciesUrl = data.species?.url || `${BASE_URL}/pokemon-species/${pokemonId}`;
+        const speciesUrl = sanitizePokeApiUrl(data.species?.url) || `${BASE_URL}/pokemon-species/${pokemonId}`;
         const speciesRes = await axios.get(speciesUrl, { timeout: 4000 });
         speciesData = speciesRes.data;
       } catch (e) {}
@@ -469,7 +484,7 @@ export const getPokemonDetails = async (pokemonId, forceRefresh = false) => {
 
     let speciesData = null;
     try {
-      const speciesUrl = data.species?.url || `${BASE_URL}/pokemon-species/${pokemonId}`;
+      const speciesUrl = sanitizePokeApiUrl(data.species?.url) || `${BASE_URL}/pokemon-species/${pokemonId}`;
       const speciesRes = await axios.get(speciesUrl, { timeout: 4000 });
       speciesData = speciesRes.data;
     } catch (e) {
@@ -771,12 +786,12 @@ export const getPokemonEvolutionChain = async (pokemonId, forceRefresh = false) 
     if (pokemonId > 10000) {
       const pRes = await apiClient.get(`/pokemon/${pokemonId}`);
       if (pRes.data.species?.url) {
-        speciesUrl = pRes.data.species.url;
+        speciesUrl = sanitizePokeApiUrl(pRes.data.species.url) || speciesUrl;
       }
     }
 
     const speciesRes = await axios.get(speciesUrl, { timeout: 4000 });
-    const chainUrl = speciesRes.data.evolution_chain?.url;
+    const chainUrl = sanitizePokeApiUrl(speciesRes.data.evolution_chain?.url);
 
     let rootNode = null;
     if (!chainUrl) {

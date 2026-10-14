@@ -26,6 +26,7 @@ import {
   getPokemonAbilityInfo,
   getPokemonDefensiveMultipliers,
 } from '../utils/teamUtils.js';
+import { matchesPokemonSearch } from '../utils/searchUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -127,8 +128,7 @@ export const TeamBuilderScreen = ({ navigation }) => {
       list = list.filter(p => (p.types || []).some(t => t.toLowerCase() === selectedPickerType));
     }
     if (searchPickerText.trim()) {
-      const q = searchPickerText.toLowerCase().trim();
-      list = list.filter(p => p.name.toLowerCase().includes(q) || String(p.id).includes(q));
+      list = list.filter(p => matchesPokemonSearch(p, searchPickerText));
     }
     return list.slice(0, 100);
   }, [searchPickerText, selectedPickerType]);

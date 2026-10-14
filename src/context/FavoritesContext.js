@@ -16,10 +16,13 @@ export const FavoritesProvider = ({ children }) => {
         const savedFavorites = await AsyncStorage.getItem('@favorite_pokemon');
         if (savedFavorites !== null) {
           const parsed = JSON.parse(savedFavorites);
-          setFavorites(parsed);
-          // Silently ensure favorites are cached in background
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            backgroundWarmupFavorites(parsed);
+          if (Array.isArray(parsed)) {
+            const validIds = parsed.filter(id => Number.isInteger(id) && id > 0);
+            setFavorites(validIds);
+            // Silently ensure favorites are cached in background
+            if (validIds.length > 0) {
+              backgroundWarmupFavorites(validIds);
+            }
           }
         }
       } catch (e) {
@@ -43,6 +46,8 @@ export const FavoritesProvider = ({ children }) => {
   const addFavorite = async (pokemonId) => {
     try {
       const numericId = parseInt(pokemonId, 10);
+      if (!Number.isInteger(numericId) || numericId <= 0) return;
+
       if (!favorites.includes(numericId)) {
         const newFavorites = [...favorites, numericId];
         setFavorites(newFavorites);
@@ -59,6 +64,8 @@ export const FavoritesProvider = ({ children }) => {
   const removeFavorite = async (pokemonId) => {
     try {
       const numericId = parseInt(pokemonId, 10);
+      if (!Number.isInteger(numericId) || numericId <= 0) return;
+
       const newFavorites = favorites.filter(id => id !== numericId);
       setFavorites(newFavorites);
       await AsyncStorage.setItem('@favorite_pokemon', JSON.stringify(newFavorites));
@@ -69,11 +76,13 @@ export const FavoritesProvider = ({ children }) => {
 
   const isFavorite = useCallback((pokemonId) => {
     const numericId = parseInt(pokemonId, 10);
+    if (!Number.isInteger(numericId)) return false;
     return favorites.includes(numericId);
   }, [favorites]);
 
   const toggleFavorite = async (pokemonId) => {
     const numericId = parseInt(pokemonId, 10);
+    if (!Number.isInteger(numericId) || numericId <= 0) return;
     if (isFavorite(numericId)) {
       await removeFavorite(numericId);
     } else {

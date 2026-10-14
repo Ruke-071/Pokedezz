@@ -9,9 +9,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useFavorites } from '../context/FavoritesContext';
+import { useCollection } from '../context/CollectionContext';
 import { championsPokemon } from '../data/championsPokemon';
 import { newlyAddedPokemon } from '../data/newlyAdded';
 import { TYPE_COLORS } from './FilterModal';
+import { PikachuFace } from './PikachuFace';
 
 // Helper to determine the official Pokédex species color category for Gen 1,
 // falling back to closely aligned type colors for Gen 2-9.
@@ -264,11 +266,14 @@ export const getSolidCircleBg = (dexColor, isDark) => {
 export const PokemonCard = React.memo(({ pokemon, onPress }) => {
   const { theme } = useTheme();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { isCaught, isShiny } = useCollection();
 
   const nameLower = pokemon.name.toLowerCase();
   const isChamp = championsPokemon.includes(nameLower);
   const isNew = newlyAddedPokemon.includes(nameLower);
   const favorited = isFavorite(pokemon.id);
+  const caught = isCaught(pokemon.id);
+  const shiny = isShiny(pokemon.id);
 
   // Format name: replace hyphens with spaces and capitalize each word
   let displayName = pokemon.name;
@@ -310,11 +315,27 @@ export const PokemonCard = React.memo(({ pokemon, onPress }) => {
         }
       ]}
     >
-      {/* Top Header Row: ID & Favorite Button */}
+      {/* Top Header Row: ID & Indicators */}
       <View style={styles.cardHeader}>
-        <Text style={[styles.idText, { color: theme.colors.textSecondary }]}>
-          #{String(pokemon.speciesId ?? pokemon.id).padStart(4, '0')}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Text style={[styles.idText, { color: theme.colors.textSecondary }]}>
+            #{String(pokemon.speciesId ?? pokemon.id).padStart(4, '0')}
+          </Text>
+          {caught && (
+            <Ionicons name="checkmark-circle" size={13} color="#4CAF50" />
+          )}
+          {shiny && (
+            <Ionicons name="sparkles" size={12} color="#FFD700" />
+          )}
+        </View>
+
+        {theme.isPikachu && (
+          <View style={styles.pikaCardSignature}>
+            <PikachuFace size={16} />
+            <Ionicons name="flash" size={9} color="#FF3B30" style={{ marginLeft: 2 }} />
+          </View>
+        )}
+
         <TouchableOpacity
           style={styles.heartButton}
           onPress={() => toggleFavorite(pokemon.id)}
@@ -388,6 +409,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
     alignItems: 'center',
+  },
+  pikaCardSignature: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(255, 215, 0, 0.18)',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: '#FFD70088',
+  },
+  pikaCheekDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#FF3B30',
   },
   idText: {
     fontSize: 11,

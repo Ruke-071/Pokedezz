@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,24 +11,32 @@ import {
   FlatList,
   Switch,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useTeam } from '../context/TeamContext';
 import { pokemonIndex } from '../data/pokemonIndex';
-import { calculatePokemonStats, NATURES } from '../utils/statCalculator';
+import { calculatePokemonStats, NATURES, STAT_LABELS } from '../utils/statCalculator';
+import { getPokemonDetails } from '../services/pokemonService';
+import { BUNDLED_MOVES } from '../data/offlineFallbackData';
 import {
   COMPETITIVE_MOVES,
   WEATHERS,
   TERRAINS,
   ATTACKER_ITEMS,
   DEFENDER_ITEMS,
+  ATTACKER_DAMAGING_ABILITIES,
+  DEFENDER_DAMAGING_ABILITIES,
   TYPE_COLORS,
   ALL_POKEMON_TYPES,
   calculateBattleDamage,
   calculateDefenderTypeMatrix,
 } from '../utils/battleCalculator';
+import { matchesPokemonSearch } from '../utils/searchUtils';
+import { PikachuStickerBackground } from '../components/PikachuStickerBackground';
+import { PikachuLoader } from '../components/PikachuLoader';
 
 const { width } = Dimensions.get('window');
 
@@ -77,49 +85,59 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
   const [hasLightScreen, setHasLightScreen] = useState(false);
   const [isDoubles, setIsDoubles] = useState(false);
 
-  // ── Modal Pickers ───────────────────────────────────────────────────────────
+  // ── Modal Pickers & Learnset State ─────────────────────────────────────────
   const [pokemonPickerTarget, setPokemonPickerTarget] = useState(null); // 'attacker' | 'defender'
   const [pokemonSearch, setPokemonSearch] = useState('');
   const [isMovePickerOpen, setIsMovePickerOpen] = useState(false);
   const [moveSearch, setMoveSearch] = useState('');
   const [moveTypeFilter, setMoveTypeFilter] = useState('all');
+  const [movePickerTab, setMovePickerTab] = useState('learnset'); // 'learnset' | 'all'
+  const [attackerLearnset, setAttackerLearnset] = useState([]);
+  const [isLoadingLearnset, setIsLoadingLearnset] = useState(false);
+
+  // Nature Modal
+  const [naturePickerTarget, setNaturePickerTarget] = useState(null); // 'attacker' | 'defender'
+  const [natureSearch, setNatureSearch] = useState('');
+  const [natureFilter, setNatureFilter] = useState('all');
+
   const [isTeamPickerOpen, setIsTeamPickerOpen] = useState(false);
   const [teamPickerTarget, setTeamPickerTarget] = useState('attacker');
+
+  // ── Robust Base Stats Extractor ─────────────────────────────────────────────
+  const extractBaseStats = useCallback((poke) => {
+    if (!poke) return { hp: 50, attack: 50, defense: 50, spAtk: 50, spDef: 50, speed: 50 };
+    const s = poke.stats || {};
+    const dexMatch = pokemonIndex.find(p => p.id === poke.id || p.name?.toLowerCase() === poke.name?.toLowerCase());
+    return {
+      hp: Number(poke.hp ?? s.hp ?? dexMatch?.hp) || 50,
+      attack: Number(poke.attack ?? s.attack ?? dexMatch?.attack) || 50,
+      defense: Number(poke.defense ?? s.defense ?? dexMatch?.defense) || 50,
+      spAtk: Number(poke.spAtk ?? poke.specialAttack ?? s.spAtk ?? s.specialAttack ?? dexMatch?.spAtk) || 50,
+      spDef: Number(poke.spDef ?? poke.specialDefense ?? s.spDef ?? s.specialDefense ?? dexMatch?.spDef) || 50,
+      speed: Number(poke.speed ?? s.speed ?? dexMatch?.speed) || 50,
+    };
+  }, []);
 
   // ── Compute Active Stats for Attacker & Defender ────────────────────────────
   const attackerStats = useMemo(() => {
     return calculatePokemonStats({
-      baseStats: {
-        hp: attackerPoke.hp,
-        attack: attackerPoke.attack,
-        defense: attackerPoke.defense,
-        spAtk: attackerPoke.spAtk,
-        spDef: attackerPoke.spDef,
-        speed: attackerPoke.speed,
-      },
+      baseStats: extractBaseStats(attackerPoke),
       ivs: attackerIvs,
       evs: attackerEvs,
       level: attackerLevel,
       nature: attackerNature,
     });
-  }, [attackerPoke, attackerIvs, attackerEvs, attackerLevel, attackerNature]);
+  }, [attackerPoke, attackerIvs, attackerEvs, attackerLevel, attackerNature, extractBaseStats]);
 
   const defenderStats = useMemo(() => {
     return calculatePokemonStats({
-      baseStats: {
-        hp: defenderPoke.hp,
-        attack: defenderPoke.attack,
-        defense: defenderPoke.defense,
-        spAtk: defenderPoke.spAtk,
-        spDef: defenderPoke.spDef,
-        speed: defenderPoke.speed,
-      },
+      baseStats: extractBaseStats(defenderPoke),
       ivs: defenderIvs,
       evs: defenderEvs,
       level: defenderLevel,
       nature: defenderNature,
     });
-  }, [defenderPoke, defenderIvs, defenderEvs, defenderLevel, defenderNature]);
+  }, [defenderPoke, defenderIvs, defenderEvs, defenderLevel, defenderNature, extractBaseStats]);
 
   // Active Move object
   const activeMove = useMemo(() => {
@@ -128,7 +146,7 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
         name: 'Custom Move',
         type: customMoveType,
         category: customMoveCategory,
-        power: Math.max(1, parseInt(customMovePower, 10) || 50),
+        power: Math.max(1, Math.min(500, parseInt(customMovePower, 10) || 50)),
       };
     }
     return selectedMove;
@@ -141,14 +159,14 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
         id: attackerPoke.id,
         name: attackerPoke.name,
         types: attackerPoke.types,
-        stats: attackerStats,
+        stats: attackerStats.stats,
         level: attackerLevel,
       },
       defender: {
         id: defenderPoke.id,
         name: defenderPoke.name,
         types: defenderPoke.types,
-        stats: defenderStats,
+        stats: defenderStats.stats,
         level: defenderLevel,
       },
       move: activeMove,
@@ -191,7 +209,10 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
 
   // ── Compute 18-Type Matchup Matrix for Defender ─────────────────────────────
   const typeMatrix = useMemo(() => {
-    return calculateDefenderTypeMatrix(defenderPoke.types, defenderAbility);
+    const safeTypes = (defenderPoke.types || []).map(t =>
+      typeof t === 'string' ? t : (t?.name || t?.type?.name || 'normal')
+    );
+    return calculateDefenderTypeMatrix(safeTypes, defenderAbility);
   }, [defenderPoke.types, defenderAbility]);
 
   // ── Quick Swap Roles (Attacker <-> Defender) ────────────────────────────────
@@ -227,16 +248,135 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
     defenderPoke, defenderLevel, defenderNature, defenderItem, defenderAbility, defenderEvs, defenderIvs, defenderStage
   ]);
 
+  // ── Fetch Attacker Learnset ─────────────────────────────────────────────────
+  useEffect(() => {
+    let isMounted = true;
+    async function loadLearnset() {
+      setIsLoadingLearnset(true);
+      try {
+        const details = await getPokemonDetails(attackerPoke.id);
+        if (!isMounted) return;
+
+        const moveNames = new Set();
+        if (details?.moves?.byVersion) {
+          Object.values(details.moves.byVersion).forEach(versionData => {
+            ['level-up', 'machine', 'egg', 'tutor'].forEach(cat => {
+              if (Array.isArray(versionData[cat])) {
+                versionData[cat].forEach(m => {
+                  if (m?.name) moveNames.add(m.name.toLowerCase().trim());
+                });
+              }
+            });
+          });
+        }
+
+        const resolvedMoves = [];
+        const seenKeys = new Set();
+
+        // 1. First check if any move in learnset matches COMPETITIVE_MOVES
+        moveNames.forEach(rawName => {
+          const cleanKey = rawName.replace(/[^a-z0-9]/g, '');
+          if (seenKeys.has(cleanKey)) return;
+
+          const compMatch = COMPETITIVE_MOVES.find(
+            cm => cm.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanKey
+          );
+          if (compMatch) {
+            seenKeys.add(cleanKey);
+            resolvedMoves.push({ ...compMatch, source: 'learnset' });
+            return;
+          }
+
+          // 2. Check BUNDLED_MOVES
+          const bundled = BUNDLED_MOVES[rawName] || BUNDLED_MOVES[rawName.replace(/-/g, '')];
+          if (bundled && bundled.power && bundled.damageClass !== 'status') {
+            seenKeys.add(cleanKey);
+            resolvedMoves.push({
+              name: bundled.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+              type: bundled.type,
+              category: bundled.damageClass === 'special' ? 'special' : 'physical',
+              power: bundled.power,
+              accuracy: bundled.accuracy || 100,
+              source: 'learnset',
+            });
+          }
+        });
+
+        // If learnset is empty (e.g. offline with minimal fallback), include STAB moves from COMPETITIVE_MOVES
+        const attackerTypes = (attackerPoke.types || []).map(t =>
+          (typeof t === 'string' ? t : (t?.name || t?.type?.name || '')).toLowerCase()
+        ).filter(Boolean);
+
+        if (resolvedMoves.length === 0) {
+          COMPETITIVE_MOVES.forEach(cm => {
+            const cmType = (cm.type || '').toLowerCase();
+            if (attackerTypes.includes(cmType)) {
+              resolvedMoves.push({ ...cm, source: 'suggested' });
+            }
+          });
+        }
+
+        // Sort: moves matching attacker types (STAB) first, then by power descending
+        resolvedMoves.sort((a, b) => {
+          const aType = (a?.type || '').toLowerCase();
+          const bType = (b?.type || '').toLowerCase();
+          const aStab = attackerTypes.includes(aType) ? 1 : 0;
+          const bStab = attackerTypes.includes(bType) ? 1 : 0;
+          if (aStab !== bStab) return bStab - aStab;
+          return (b.power || 0) - (a.power || 0);
+        });
+
+        if (isMounted) {
+          setAttackerLearnset(resolvedMoves);
+        }
+      } catch (err) {
+        console.warn('Error fetching attacker learnset:', err);
+      } finally {
+        if (isMounted) setIsLoadingLearnset(false);
+      }
+    }
+
+    loadLearnset();
+    return () => { isMounted = false; };
+  }, [attackerPoke.id]);
+
+  // Nature summary helper
+  const getNatureSummary = useCallback((natName) => {
+    const found = NATURES.find(n => n.name.toLowerCase() === (natName || '').toLowerCase());
+    if (!found || !found.increased) return 'Neutral (Balanced stats)';
+    const inc = STAT_LABELS[found.increased] || found.increased;
+    const dec = STAT_LABELS[found.decreased] || found.decreased;
+    return `+10% ${inc}, -10% ${dec}`;
+  }, []);
+
+  // Filtered natures for Nature Picker modal
+  const filteredNatures = useMemo(() => {
+    return NATURES.filter(n => {
+      if (natureFilter === 'neutral') {
+        if (n.increased) return false;
+      } else if (natureFilter !== 'all') {
+        if (n.increased !== natureFilter) return false;
+      }
+      if (natureSearch.trim()) {
+        const q = natureSearch.toLowerCase().trim();
+        const inc = n.increased ? (STAT_LABELS[n.increased] || n.increased).toLowerCase() : '';
+        const dec = n.decreased ? (STAT_LABELS[n.decreased] || n.decreased).toLowerCase() : '';
+        return n.name.toLowerCase().includes(q) || inc.includes(q) || dec.includes(q);
+      }
+      return true;
+    });
+  }, [natureFilter, natureSearch]);
+
   // Filtered Pokémon list for modal
   const filteredPokemon = useMemo(() => {
     if (!pokemonSearch.trim()) return pokemonIndex.slice(0, 40);
-    const q = pokemonSearch.toLowerCase().trim();
-    return pokemonIndex.filter(p => p.name.toLowerCase().includes(q) || String(p.id).includes(q)).slice(0, 50);
+    return pokemonIndex.filter(p => matchesPokemonSearch(p, pokemonSearch)).slice(0, 50);
   }, [pokemonSearch]);
 
-  // Filtered moves list for modal
+  // Filtered moves list for modal (supports learnset tab vs all moves)
   const filteredMoves = useMemo(() => {
-    return COMPETITIVE_MOVES.filter(m => {
+    const activeList = movePickerTab === 'learnset' ? attackerLearnset : COMPETITIVE_MOVES;
+    return activeList.filter(m => {
       if (moveTypeFilter !== 'all' && m.type.toLowerCase() !== moveTypeFilter) return false;
       if (moveSearch.trim()) {
         const q = moveSearch.toLowerCase().trim();
@@ -244,10 +384,10 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
       }
       return true;
     });
-  }, [moveSearch, moveTypeFilter]);
+  }, [movePickerTab, attackerLearnset, moveSearch, moveTypeFilter]);
 
   // HP Bar color based on remaining defender HP percentage
-  const remainingHpPercent = Math.max(0, 100 - battleResult.maxPercent);
+  const remainingHpPercent = Math.max(0, Math.min(100, 100 - (battleResult.maxPercent || 0)));
   const hpBarColor =
     remainingHpPercent > 50 ? '#4CAF50' : remainingHpPercent > 20 ? '#FFCB05' : '#FF5252';
 
@@ -256,6 +396,7 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isPikachu && <PikachuStickerBackground opacity={0.20} />}
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
         showsVerticalScrollIndicator={false}
@@ -273,18 +414,43 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
             </View>
             <Image source={{ uri: attackerArtwork }} style={styles.combatantImg} resizeMode="contain" />
             <Text numberOfLines={1} style={[styles.combatantName, { color: theme.colors.text }]}>
-              {attackerPoke.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+              {(attackerPoke?.name || 'Attacker').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
             </Text>
             <View style={styles.typesRow}>
-              {attackerPoke.types.map(t => (
-                <View key={`att-${t}`} style={[styles.miniTypePill, { backgroundColor: TYPE_COLORS[t.toLowerCase()] || '#888' }]}>
-                  <Text style={styles.miniTypePillText}>{t.toUpperCase()}</Text>
-                </View>
-              ))}
+              {(attackerPoke.types || []).map((t, idx) => {
+                const tName = typeof t === 'string' ? t : (t?.name || t?.type?.name || 'normal');
+                return (
+                  <View key={`att-${tName}-${idx}`} style={[styles.miniTypePill, { backgroundColor: TYPE_COLORS[tName.toLowerCase()] || '#888' }]}>
+                    <Text style={styles.miniTypePillText}>{tName.toUpperCase()}</Text>
+                  </View>
+                );
+              })}
             </View>
-            <Text style={[styles.combatantSub, { color: theme.colors.textSecondary }]}>
-              Lvl {attackerLevel} • {attackerNature}
-            </Text>
+            <View style={styles.combatantMetaRow}>
+              <Text style={[styles.combatantSub, { color: theme.colors.textSecondary }]}>
+                Lvl {attackerLevel}
+              </Text>
+              <TouchableOpacity
+                style={[styles.naturePill, { backgroundColor: '#FF7A0018', borderColor: '#FF7A00' }]}
+                onPress={() => {
+                  setNatureSearch('');
+                  setNatureFilter('all');
+                  setNaturePickerTarget('attacker');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.naturePillText, { color: '#FF7A00' }]}>{attackerNature}</Text>
+                <Ionicons name="pencil" size={10} color="#FF7A00" style={{ marginLeft: 3 }} />
+              </TouchableOpacity>
+            </View>
+            {attackerAbility !== 'none' && (
+              <View style={[styles.abilityArenaBadge, { backgroundColor: '#FF7A0018', borderColor: '#FF7A00' }]}>
+                <Ionicons name="flash" size={10} color="#FF7A00" />
+                <Text numberOfLines={1} style={[styles.abilityArenaBadgeText, { color: '#FF7A00' }]}>
+                  {ATTACKER_DAMAGING_ABILITIES.find(a => a.id === attackerAbility)?.name || attackerAbility}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
 
           {/* Center VS & Quick Swap */}
@@ -323,18 +489,43 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
             </View>
             <Image source={{ uri: defenderArtwork }} style={styles.combatantImg} resizeMode="contain" />
             <Text numberOfLines={1} style={[styles.combatantName, { color: theme.colors.text }]}>
-              {defenderPoke.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+              {(defenderPoke?.name || 'Defender').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
             </Text>
             <View style={styles.typesRow}>
-              {defenderPoke.types.map(t => (
-                <View key={`def-${t}`} style={[styles.miniTypePill, { backgroundColor: TYPE_COLORS[t.toLowerCase()] || '#888' }]}>
-                  <Text style={styles.miniTypePillText}>{t.toUpperCase()}</Text>
-                </View>
-              ))}
+              {(defenderPoke.types || []).map((t, idx) => {
+                const tName = typeof t === 'string' ? t : (t?.name || t?.type?.name || 'normal');
+                return (
+                  <View key={`def-${tName}-${idx}`} style={[styles.miniTypePill, { backgroundColor: TYPE_COLORS[tName.toLowerCase()] || '#888' }]}>
+                    <Text style={styles.miniTypePillText}>{tName.toUpperCase()}</Text>
+                  </View>
+                );
+              })}
             </View>
-            <Text style={[styles.combatantSub, { color: theme.colors.textSecondary }]}>
-              Lvl {defenderLevel} • {defenderNature}
-            </Text>
+            <View style={styles.combatantMetaRow}>
+              <Text style={[styles.combatantSub, { color: theme.colors.textSecondary }]}>
+                Lvl {defenderLevel}
+              </Text>
+              <TouchableOpacity
+                style={[styles.naturePill, { backgroundColor: '#4D62E818', borderColor: '#4D62E8' }]}
+                onPress={() => {
+                  setNatureSearch('');
+                  setNatureFilter('all');
+                  setNaturePickerTarget('defender');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.naturePillText, { color: '#4D62E8' }]}>{defenderNature}</Text>
+                <Ionicons name="pencil" size={10} color="#4D62E8" style={{ marginLeft: 3 }} />
+              </TouchableOpacity>
+            </View>
+            {defenderAbility !== 'none' && (
+              <View style={[styles.abilityArenaBadge, { backgroundColor: '#4D62E818', borderColor: '#4D62E8' }]}>
+                <Ionicons name="shield" size={10} color="#4D62E8" />
+                <Text numberOfLines={1} style={[styles.abilityArenaBadgeText, { color: '#4D62E8' }]}>
+                  {DEFENDER_DAMAGING_ABILITIES.find(a => a.id === defenderAbility)?.name || defenderAbility}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -344,7 +535,7 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
             <View>
               <Text style={[styles.heroSubHeader, { color: theme.colors.textSecondary }]}>ESTIMATED DAMAGE</Text>
               <Text style={[styles.heroDamageRange, { color: theme.colors.text }]}>
-                {battleResult.minPercent}% - {battleResult.maxPercent}%
+                {Number.isFinite(battleResult.minPercent) ? battleResult.minPercent : 0}% - {Number.isFinite(battleResult.maxPercent) ? battleResult.maxPercent : 0}%
               </Text>
             </View>
             <View
@@ -360,13 +551,13 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
                 },
               ]}
             >
-              <Text style={styles.verdictBadgeText}>{battleResult.koDescription}</Text>
+              <Text style={styles.verdictBadgeText}>{battleResult.koDescription || 'Cannot KO'}</Text>
             </View>
           </View>
 
           {/* Damage in HP */}
           <Text style={[styles.hpNumbersText, { color: theme.colors.textSecondary }]}>
-            Deals <Text style={{ color: theme.colors.text, fontWeight: '700' }}>{battleResult.minDamage} - {battleResult.maxDamage} HP</Text> (Defender Max HP: {battleResult.defenderMaxHp})
+            Deals <Text style={{ color: theme.colors.text, fontWeight: '700' }}>{Number.isFinite(battleResult.minDamage) ? battleResult.minDamage : 0} - {Number.isFinite(battleResult.maxDamage) ? battleResult.maxDamage : 0} HP</Text> (Defender Max HP: {Number.isFinite(battleResult.defenderMaxHp) ? battleResult.defenderMaxHp : 0})
           </Text>
 
           {/* Dynamic Interactive HP Gauge */}
@@ -375,7 +566,7 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
               style={[
                 styles.hpBarDamage,
                 {
-                  width: `${Math.min(100, battleResult.maxPercent)}%`,
+                  width: `${Math.min(100, Number.isFinite(battleResult.maxPercent) ? battleResult.maxPercent : 0)}%`,
                   backgroundColor: '#E5393588',
                 },
               ]}
@@ -384,7 +575,7 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
               style={[
                 styles.hpBarFill,
                 {
-                  width: `${remainingHpPercent}%`,
+                  width: `${Number.isFinite(remainingHpPercent) ? remainingHpPercent : 100}%`,
                   backgroundColor: hpBarColor,
                 },
               ]}
@@ -392,7 +583,7 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
           </View>
           <View style={styles.hpBarLabels}>
             <Text style={[styles.hpBarStatusText, { color: hpBarColor }]}>
-              Remaining HP: ~{remainingHpPercent.toFixed(1)}%
+              Remaining HP: ~{Number.isFinite(remainingHpPercent) ? remainingHpPercent.toFixed(1) : '100.0'}%
             </Text>
             <Text style={[styles.hpBarStatusText, { color: theme.colors.textSecondary }]}>
               Hits to KO: {battleResult.hitsToKo ? `${battleResult.hitsToKo} Hit${battleResult.hitsToKo > 1 ? 's' : ''}` : 'N/A'}
@@ -401,11 +592,17 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
 
           {/* Battle Modifiers Pill Row */}
           <View style={styles.modifierPillsWrap}>
-            {battleResult.isStab && (
+            {battleResult.isStab && attackerAbility !== 'adaptability' && (
               <View style={[styles.modPill, { backgroundColor: '#4CAF501C', borderColor: '#4CAF50' }]}>
                 <Text style={[styles.modPillText, { color: '#4CAF50' }]}>STAB (1.5×)</Text>
               </View>
             )}
+            {/* Active Damaging Abilities */}
+            {battleResult.activeAbilityEffects?.map((eff, idx) => (
+              <View key={`ab-eff-${idx}`} style={[styles.modPill, { backgroundColor: '#9C27B01C', borderColor: '#9C27B0' }]}>
+                <Text style={[styles.modPillText, { color: '#9C27B0' }]}>{eff.name} ({eff.multiplier})</Text>
+              </View>
+            ))}
             {battleResult.effectiveness >= 2 && (
               <View style={[styles.modPill, { backgroundColor: '#E539351C', borderColor: '#E53935' }]}>
                 <Text style={[styles.modPillText, { color: '#E53935' }]}>Super Effective ({battleResult.effectiveness}×)</Text>
@@ -462,7 +659,7 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
                   style={[styles.textInput, { backgroundColor: theme.colors.background, color: theme.colors.text, borderColor: theme.colors.border }]}
                   keyboardType="numeric"
                   value={customMovePower}
-                  onChangeText={setCustomMovePower}
+                  onChangeText={(text) => setCustomMovePower(text.replace(/[^0-9]/g, ''))}
                   maxLength={3}
                 />
               </View>
@@ -817,35 +1014,181 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
             </ScrollView>
           </View>
 
+          {/* Attacker Damaging Ability */}
+          <View style={[styles.buildRow, { marginTop: 14 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={[styles.buildTitle, { color: theme.colors.text }]}>Attacker Ability</Text>
+              <Text numberOfLines={1} style={[styles.abilityDescLabel, { color: '#FF7A00' }]}>
+                {ATTACKER_DAMAGING_ABILITIES.find(a => a.id === attackerAbility)?.desc || ''}
+              </Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
+              {ATTACKER_DAMAGING_ABILITIES.map(ab => {
+                const isSelected = attackerAbility === ab.id;
+                return (
+                  <TouchableOpacity
+                    key={`att-ab-${ab.id}`}
+                    style={[
+                      styles.itemChip,
+                      {
+                        backgroundColor: isSelected ? '#FF7A00' : theme.colors.background,
+                        borderColor: isSelected ? '#FF7A00' : theme.colors.border,
+                      },
+                    ]}
+                    onPress={() => setAttackerAbility(ab.id)}
+                  >
+                    <Text style={[styles.itemChipText, { color: isSelected ? '#FFFFFF' : theme.colors.text, fontWeight: isSelected ? '700' : '500' }]}>
+                      {ab.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* Defender Damaging / Defensive Ability */}
+          <View style={[styles.buildRow, { marginTop: 14 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={[styles.buildTitle, { color: theme.colors.text }]}>Defender Ability</Text>
+              <Text numberOfLines={1} style={[styles.abilityDescLabel, { color: '#4D62E8' }]}>
+                {DEFENDER_DAMAGING_ABILITIES.find(a => a.id === defenderAbility)?.desc || ''}
+              </Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
+              {DEFENDER_DAMAGING_ABILITIES.map(ab => {
+                const isSelected = defenderAbility === ab.id;
+                return (
+                  <TouchableOpacity
+                    key={`def-ab-${ab.id}`}
+                    style={[
+                      styles.itemChip,
+                      {
+                        backgroundColor: isSelected ? '#4D62E8' : theme.colors.background,
+                        borderColor: isSelected ? '#4D62E8' : theme.colors.border,
+                      },
+                    ]}
+                    onPress={() => setDefenderAbility(ab.id)}
+                  >
+                    <Text style={[styles.itemChipText, { color: isSelected ? '#FFFFFF' : theme.colors.text, fontWeight: isSelected ? '700' : '500' }]}>
+                      {ab.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* Pokémon Natures Selection */}
+          <View style={[styles.natureConfigSection, { borderTopColor: theme.colors.border }]}>
+            <Text style={[styles.buildTitle, { color: theme.colors.text }]}>Pokémon Natures</Text>
+            <View style={styles.natureCardsRow}>
+              {/* Attacker Nature Card */}
+              <TouchableOpacity
+                style={[styles.natureCardBtn, { borderColor: '#FF7A00', backgroundColor: '#FF7A000F' }]}
+                onPress={() => {
+                  setNatureSearch('');
+                  setNatureFilter('all');
+                  setNaturePickerTarget('attacker');
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.natureCardRole, { color: '#FF7A00' }]}>ATTACKER</Text>
+                  <Text style={[styles.natureCardName, { color: theme.colors.text }]}>{attackerNature}</Text>
+                  <Text numberOfLines={1} style={[styles.natureCardSummary, { color: theme.colors.textSecondary }]}>
+                    {getNatureSummary(attackerNature)}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#FF7A00" />
+              </TouchableOpacity>
+
+              {/* Defender Nature Card */}
+              <TouchableOpacity
+                style={[styles.natureCardBtn, { borderColor: '#4D62E8', backgroundColor: '#4D62E80F' }]}
+                onPress={() => {
+                  setNatureSearch('');
+                  setNatureFilter('all');
+                  setNaturePickerTarget('defender');
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.natureCardRole, { color: '#4D62E8' }]}>DEFENDER</Text>
+                  <Text style={[styles.natureCardName, { color: theme.colors.text }]}>{defenderNature}</Text>
+                  <Text numberOfLines={1} style={[styles.natureCardSummary, { color: theme.colors.textSecondary }]}>
+                    {getNatureSummary(defenderNature)}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#4D62E8" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* Level Toggles (50 / 100) */}
           <View style={[styles.levelPresetRow, { borderTopColor: theme.colors.border }]}>
-            <Text style={[styles.buildTitle, { color: theme.colors.text }]}>Standard Level Presets</Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <Text style={[styles.buildTitle, { color: theme.colors.text }]}>Standard Level Presets</Text>
+              <Text style={{ fontSize: 11, color: theme.colors.textSecondary }}>
+                Attacker: Lvl {attackerLevel} • Defender: Lvl {defenderLevel}
+              </Text>
+            </View>
+            <View style={styles.lvlBtnGroup}>
               <TouchableOpacity
                 style={[
                   styles.lvlBtn,
-                  attackerLevel === 50 && defenderLevel === 50 && { backgroundColor: theme.colors.primary },
-                  { borderColor: theme.colors.border },
+                  {
+                    backgroundColor: attackerLevel === 50 && defenderLevel === 50 ? theme.colors.primary : theme.colors.background,
+                    borderColor: attackerLevel === 50 && defenderLevel === 50 ? theme.colors.primary : theme.colors.border,
+                  },
                 ]}
                 onPress={() => {
                   setAttackerLevel(50);
                   setDefenderLevel(50);
                 }}
+                activeOpacity={0.8}
               >
-                <Text style={[styles.lvlBtnText, attackerLevel === 50 && { color: '#FFFFFF' }]}>Level 50 (VGC)</Text>
+                <Ionicons
+                  name={attackerLevel === 50 && defenderLevel === 50 ? 'checkmark-circle' : 'radio-button-off'}
+                  size={15}
+                  color={attackerLevel === 50 && defenderLevel === 50 ? '#FFFFFF' : theme.colors.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.lvlBtnText,
+                    { color: attackerLevel === 50 && defenderLevel === 50 ? '#FFFFFF' : theme.colors.text },
+                  ]}
+                >
+                  Level 50 (VGC)
+                </Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 style={[
                   styles.lvlBtn,
-                  attackerLevel === 100 && defenderLevel === 100 && { backgroundColor: theme.colors.primary },
-                  { borderColor: theme.colors.border },
+                  {
+                    backgroundColor: attackerLevel === 100 && defenderLevel === 100 ? theme.colors.primary : theme.colors.background,
+                    borderColor: attackerLevel === 100 && defenderLevel === 100 ? theme.colors.primary : theme.colors.border,
+                  },
                 ]}
                 onPress={() => {
                   setAttackerLevel(100);
                   setDefenderLevel(100);
                 }}
+                activeOpacity={0.8}
               >
-                <Text style={[styles.lvlBtnText, attackerLevel === 100 && { color: '#FFFFFF' }]}>Level 100 (Smogon)</Text>
+                <Ionicons
+                  name={attackerLevel === 100 && defenderLevel === 100 ? 'checkmark-circle' : 'radio-button-off'}
+                  size={15}
+                  color={attackerLevel === 100 && defenderLevel === 100 ? '#FFFFFF' : theme.colors.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.lvlBtnText,
+                    { color: attackerLevel === 100 && defenderLevel === 100 ? '#FFFFFF' : theme.colors.text },
+                  ]}
+                >
+                  Level 100 (Smogon)
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -928,18 +1271,21 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
                   <Image source={{ uri: art }} style={styles.pokePickImg} resizeMode="contain" />
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={[styles.pokePickName, { color: theme.colors.text }]}>
-                      {item.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                      {(item?.name || '').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                     </Text>
                     <Text style={[styles.pokePickSub, { color: theme.colors.textSecondary }]}>
                       #{String(item.id).padStart(3, '0')} • BST: {item.total}
                     </Text>
                   </View>
                   <View style={{ flexDirection: 'row', gap: 4 }}>
-                    {item.types.map(t => (
-                      <View key={`t-${t}`} style={[styles.miniTypePill, { backgroundColor: TYPE_COLORS[t.toLowerCase()] || '#888' }]}>
-                        <Text style={styles.miniTypePillText}>{t.toUpperCase()}</Text>
-                      </View>
-                    ))}
+                    {(item.types || []).map((t, idx) => {
+                      const tName = typeof t === 'string' ? t : (t?.name || t?.type?.name || 'normal');
+                      return (
+                        <View key={`t-${tName}-${idx}`} style={[styles.miniTypePill, { backgroundColor: TYPE_COLORS[tName.toLowerCase()] || '#888' }]}>
+                          <Text style={styles.miniTypePillText}>{tName.toUpperCase()}</Text>
+                        </View>
+                      );
+                    })}
                   </View>
                 </TouchableOpacity>
               );
@@ -948,25 +1294,83 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
         </SafeAreaView>
       </Modal>
 
-      {/* ── Modal: Move Picker ── */}
+      {/* ── Modal: Move Picker (Learnset & Competitive Moves) ── */}
       <Modal visible={isMovePickerOpen} animationType="slide">
         <SafeAreaView style={[styles.modalSafe, { backgroundColor: theme.colors.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
-            <Text style={[styles.modalHeading, { color: theme.colors.text }]}>Select Competitive Move</Text>
+            <View>
+              <Text style={[styles.modalHeading, { color: theme.colors.text }]}>Select Attack / Move</Text>
+              <Text style={{ fontSize: 11, color: theme.colors.textSecondary, marginTop: 2 }}>
+                Attacker: {(attackerPoke?.name || 'Pokemon').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+              </Text>
+            </View>
             <TouchableOpacity onPress={() => setIsMovePickerOpen(false)}>
               <Ionicons name="close" size={24} color={theme.colors.text} />
             </TouchableOpacity>
           </View>
 
+          {/* Learnset vs All Moves Tabs */}
+          <View style={[styles.moveTabsContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+            <TouchableOpacity
+              style={[
+                styles.moveTabBtn,
+                movePickerTab === 'learnset' && { backgroundColor: theme.colors.primary },
+              ]}
+              onPress={() => setMovePickerTab('learnset')}
+            >
+              <Ionicons
+                name="book-outline"
+                size={14}
+                color={movePickerTab === 'learnset' ? '#FFFFFF' : theme.colors.textSecondary}
+              />
+              <Text
+                style={[
+                  styles.moveTabBtnText,
+                  { color: movePickerTab === 'learnset' ? '#FFFFFF' : theme.colors.textSecondary },
+                ]}
+              >
+                Learnset ({attackerLearnset.length})
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.moveTabBtn,
+                movePickerTab === 'all' && { backgroundColor: theme.colors.primary },
+              ]}
+              onPress={() => setMovePickerTab('all')}
+            >
+              <Ionicons
+                name="globe-outline"
+                size={14}
+                color={movePickerTab === 'all' ? '#FFFFFF' : theme.colors.textSecondary}
+              />
+              <Text
+                style={[
+                  styles.moveTabBtnText,
+                  { color: movePickerTab === 'all' ? '#FFFFFF' : theme.colors.textSecondary },
+                ]}
+              >
+                All Moves ({COMPETITIVE_MOVES.length})
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Search Box */}
           <View style={[styles.modalSearchBox, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
             <Ionicons name="search" size={18} color={theme.colors.textSecondary} />
             <TextInput
               style={[styles.modalSearchInput, { color: theme.colors.text }]}
-              placeholder="Search move by name or type..."
+              placeholder={`Search ${movePickerTab === 'learnset' ? 'learnset' : 'database'} moves...`}
               placeholderTextColor={theme.colors.textSecondary}
               value={moveSearch}
               onChangeText={setMoveSearch}
             />
+            {moveSearch.length > 0 && (
+              <TouchableOpacity onPress={() => setMoveSearch('')}>
+                <Ionicons name="close-circle" size={18} color={theme.colors.textSecondary} />
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Type Filter Chips */}
@@ -996,30 +1400,216 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
             ))}
           </ScrollView>
 
-          <FlatList
-            data={filteredMoves}
-            keyExtractor={item => `move-${item.name}`}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.movePickRow, { borderBottomColor: theme.colors.border }]}
-                onPress={() => {
-                  setSelectedMove(item);
-                  setIsCustomMove(false);
-                  setIsMovePickerOpen(false);
-                }}
-              >
-                <View style={[styles.moveTypeBadge, { backgroundColor: TYPE_COLORS[item.type] || '#888' }]}>
-                  <Text style={styles.moveTypeBadgeText}>{item.type.toUpperCase()}</Text>
-                </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={[styles.selectedMoveName, { color: theme.colors.text }]}>{item.name}</Text>
-                  <Text style={[styles.selectedMoveMeta, { color: theme.colors.textSecondary }]}>
-                    {item.category.toUpperCase()} • Power: {item.power} • Acc: {item.accuracy}%
+          {/* List or Loading State */}
+          {movePickerTab === 'learnset' && isLoadingLearnset ? (
+            <View style={styles.loadingWrap}>
+              {theme.isPikachu ? (
+                <PikachuLoader size={44} message={`Loading ${attackerPoke.name}'s learnset...`} />
+              ) : (
+                <>
+                  <ActivityIndicator size="large" color={theme.colors.primary} />
+                  <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
+                    Loading {attackerPoke.name}'s learnset...
                   </Text>
-                </View>
-                <Ionicons name="add-circle-outline" size={22} color={theme.colors.primary} />
+                </>
+              )}
+            </View>
+          ) : filteredMoves.length === 0 ? (
+            <View style={styles.emptyWrap}>
+              <Ionicons name="alert-circle-outline" size={40} color={theme.colors.textSecondary} />
+              <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>No moves found</Text>
+              <Text style={[styles.emptySubtitle, { color: theme.colors.textSecondary }]}>
+                {movePickerTab === 'learnset'
+                  ? 'No matching moves in learnset. Try browsing All Moves.'
+                  : 'No moves match your filter or search query.'}
+              </Text>
+              {movePickerTab === 'learnset' && (
+                <TouchableOpacity
+                  style={[styles.switchTabBtn, { backgroundColor: theme.colors.primary }]}
+                  onPress={() => {
+                    setMovePickerTab('all');
+                    setMoveSearch('');
+                    setMoveTypeFilter('all');
+                  }}
+                >
+                  <Text style={styles.switchTabBtnText}>Browse All Moves</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            <FlatList
+              data={filteredMoves}
+              keyExtractor={item => `move-${item.name}-${item.type}`}
+              renderItem={({ item }) => {
+                const itemType = (item?.type || 'normal').toLowerCase();
+                const attackerTypes = (attackerPoke.types || []).map(t =>
+                  (typeof t === 'string' ? t : (t?.name || t?.type?.name || '')).toLowerCase()
+                );
+                const isStab = attackerTypes.includes(itemType);
+                return (
+                  <TouchableOpacity
+                    style={[styles.movePickRow, { borderBottomColor: theme.colors.border }]}
+                    onPress={() => {
+                      setSelectedMove(item);
+                      setIsCustomMove(false);
+                      setIsMovePickerOpen(false);
+                    }}
+                  >
+                    <View style={[styles.moveTypeBadge, { backgroundColor: TYPE_COLORS[itemType] || '#888' }]}>
+                      <Text style={styles.moveTypeBadgeText}>{itemType.toUpperCase()}</Text>
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={[styles.selectedMoveName, { color: theme.colors.text }]}>{item.name}</Text>
+                        {isStab && (
+                          <View style={styles.stabBadge}>
+                            <Text style={styles.stabBadgeText}>STAB</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={[styles.selectedMoveMeta, { color: theme.colors.textSecondary }]}>
+                        {item.category?.toUpperCase() || 'PHYSICAL'} • Power: {item.power} • Acc: {item.accuracy || 100}%
+                      </Text>
+                    </View>
+                    <Ionicons name="add-circle-outline" size={22} color={theme.colors.primary} />
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          )}
+        </SafeAreaView>
+      </Modal>
+
+      {/* ── Modal: Nature Picker ── */}
+      <Modal visible={Boolean(naturePickerTarget)} animationType="slide">
+        <SafeAreaView style={[styles.modalSafe, { backgroundColor: theme.colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+            <View>
+              <Text style={[styles.modalHeading, { color: theme.colors.text }]}>
+                Select {naturePickerTarget === 'attacker' ? 'Attacker' : 'Defender'} Nature
+              </Text>
+              <Text style={{ fontSize: 11, color: theme.colors.textSecondary, marginTop: 2 }}>
+                Current: {naturePickerTarget === 'attacker' ? attackerNature : defenderNature}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => setNaturePickerTarget(null)}>
+              <Ionicons name="close" size={24} color={theme.colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Search Box */}
+          <View style={[styles.modalSearchBox, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+            <Ionicons name="search" size={18} color={theme.colors.textSecondary} />
+            <TextInput
+              style={[styles.modalSearchInput, { color: theme.colors.text }]}
+              placeholder="Search nature by name or stat (e.g. Adamant, Attack)..."
+              placeholderTextColor={theme.colors.textSecondary}
+              value={natureSearch}
+              onChangeText={setNatureSearch}
+            />
+            {natureSearch.length > 0 && (
+              <TouchableOpacity onPress={() => setNatureSearch('')}>
+                <Ionicons name="close-circle" size={18} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             )}
+          </View>
+
+          {/* Quick Stat Boost Filters */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 44, paddingHorizontal: 16 }}>
+            {[
+              { id: 'all', label: 'ALL' },
+              { id: 'attack', label: '+ATTACK' },
+              { id: 'spAtk', label: '+SP. ATK' },
+              { id: 'defense', label: '+DEFENSE' },
+              { id: 'spDef', label: '+SP. DEF' },
+              { id: 'speed', label: '+SPEED' },
+              { id: 'neutral', label: 'NEUTRAL' },
+            ].map(f => {
+              const active = natureFilter === f.id;
+              return (
+                <TouchableOpacity
+                  key={`nf-${f.id}`}
+                  style={[
+                    styles.moveFilterChip,
+                    active && { backgroundColor: theme.colors.primary },
+                    { borderColor: theme.colors.border },
+                  ]}
+                  onPress={() => setNatureFilter(f.id)}
+                >
+                  <Text style={[styles.moveFilterChipText, active && { color: '#FFF' }]}>{f.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* Nature Items FlatList */}
+          <FlatList
+            data={filteredNatures}
+            keyExtractor={item => `nat-${item.name}`}
+            renderItem={({ item }) => {
+              const currentNature = naturePickerTarget === 'attacker' ? attackerNature : defenderNature;
+              const isSelected = currentNature?.toLowerCase() === item.name.toLowerCase();
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.naturePickRow,
+                    { borderBottomColor: theme.colors.border },
+                    isSelected && { backgroundColor: `${theme.colors.primary}12` },
+                  ]}
+                  onPress={() => {
+                    if (naturePickerTarget === 'attacker') {
+                      setAttackerNature(item.name);
+                    } else {
+                      setDefenderNature(item.name);
+                    }
+                    setNaturePickerTarget(null);
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={[styles.naturePickName, { color: theme.colors.text, fontWeight: isSelected ? '800' : '600' }]}>
+                        {item.name}
+                      </Text>
+                      {isSelected && (
+                        <View style={[styles.activeNatureTag, { backgroundColor: theme.colors.primary }]}>
+                          <Text style={styles.activeNatureTagText}>ACTIVE</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Stat Boost / Drop Chips */}
+                    <View style={styles.natureStatsRow}>
+                      {item.increased ? (
+                        <>
+                          <View style={[styles.natureStatChip, { backgroundColor: '#4CAF501C', borderColor: '#4CAF50' }]}>
+                            <Text style={[styles.natureStatChipText, { color: '#4CAF50' }]}>
+                              +10% {STAT_LABELS[item.increased] || item.increased}
+                            </Text>
+                          </View>
+                          <View style={[styles.natureStatChip, { backgroundColor: '#E539351C', borderColor: '#E53935' }]}>
+                            <Text style={[styles.natureStatChipText, { color: '#E53935' }]}>
+                              -10% {STAT_LABELS[item.decreased] || item.decreased}
+                            </Text>
+                          </View>
+                        </>
+                      ) : (
+                        <View style={[styles.natureStatChip, { backgroundColor: '#78909C1C', borderColor: '#78909C' }]}>
+                          <Text style={[styles.natureStatChipText, { color: '#78909C' }]}>
+                            Neutral (No Stat Changes)
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+
+                  <Ionicons
+                    name={isSelected ? 'checkmark-circle' : 'chevron-forward'}
+                    size={20}
+                    color={isSelected ? theme.colors.primary : theme.colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              );
+            }}
           />
         </SafeAreaView>
       </Modal>
@@ -1045,7 +1635,7 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
                     <Text style={{ color: theme.colors.textSecondary, fontSize: 12, paddingVertical: 4 }}>No Pokémon in this team</Text>
                   ) : (
                     team.members.map(member => {
-                      const match = pokemonIndex.find(p => p.id === member.id || p.name.toLowerCase() === member.name.toLowerCase());
+                      const match = pokemonIndex.find(p => p.id === member.id || (p.name && member.name && p.name.toLowerCase() === member.name.toLowerCase()));
                       if (!match) return null;
                       return (
                         <TouchableOpacity
@@ -1058,14 +1648,17 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
                           }}
                         >
                           <Text style={[styles.teamMemberName, { color: theme.colors.text }]}>
-                            {match.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                            {(match?.name || 'Pokemon').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                           </Text>
                           <View style={{ flexDirection: 'row', gap: 4 }}>
-                            {match.types.map(t => (
-                              <View key={`tt-${t}`} style={[styles.miniTypePill, { backgroundColor: TYPE_COLORS[t.toLowerCase()] || '#888' }]}>
-                                <Text style={styles.miniTypePillText}>{t.toUpperCase()}</Text>
-                              </View>
-                            ))}
+                            {(match.types || []).map((t, idx) => {
+                              const tName = typeof t === 'string' ? t : (t?.name || t?.type?.name || 'normal');
+                              return (
+                                <View key={`tt-${tName}-${idx}`} style={[styles.miniTypePill, { backgroundColor: TYPE_COLORS[tName.toLowerCase()] || '#888' }]}>
+                                  <Text style={styles.miniTypePillText}>{tName.toUpperCase()}</Text>
+                                </View>
+                              );
+                            })}
                           </View>
                         </TouchableOpacity>
                       );
@@ -1513,18 +2106,25 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingTop: 12,
     marginTop: 14,
+  },
+  lvlBtnGroup: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    gap: 10,
+    marginTop: 4,
   },
   lvlBtn: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
   lvlBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
   teamLoadSection: {
@@ -1643,5 +2243,185 @@ const styles = StyleSheet.create({
   teamMemberName: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  combatantMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+  naturePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  naturePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  natureConfigSection: {
+    borderTopWidth: 1,
+    paddingTop: 12,
+    marginTop: 14,
+  },
+  natureCardsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+  },
+  natureCardBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+  },
+  natureCardRole: {
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  natureCardName: {
+    fontSize: 14,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  natureCardSummary: {
+    fontSize: 10,
+    marginTop: 2,
+  },
+  moveTabsContainer: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: 10,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    padding: 3,
+  },
+  moveTabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  moveTabBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  loadingWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 13,
+  },
+  emptyWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    marginTop: 4,
+  },
+  emptySubtitle: {
+    fontSize: 12,
+    textAlign: 'center',
+    maxWidth: 260,
+  },
+  switchTabBtn: {
+    marginTop: 12,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  switchTabBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  stabBadge: {
+    backgroundColor: '#4CAF5022',
+    borderColor: '#4CAF50',
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  stabBadgeText: {
+    color: '#4CAF50',
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  naturePickRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  naturePickName: {
+    fontSize: 15,
+  },
+  activeNatureTag: {
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  activeNatureTagText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  natureStatsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  natureStatChip: {
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  natureStatChipText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  abilityDescLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: 8,
+  },
+  abilityArenaBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginTop: 4,
+    maxWidth: 130,
+  },
+  abilityArenaBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
   },
 });

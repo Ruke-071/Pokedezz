@@ -33,6 +33,7 @@ import {
   calculateItemStats,
   checkCanEvolve,
 } from '../utils/statCalculator';
+import { matchesPokemonSearch } from '../utils/searchUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -261,9 +262,8 @@ export const StatCalculatorScreen = ({ route, navigation }) => {
   // Search filtered Pokémon list for picker modal
   const filteredIndex = useMemo(() => {
     if (!searchPokemonText.trim()) return pokemonIndex.slice(0, 100);
-    const q = searchPokemonText.toLowerCase().trim();
     return pokemonIndex
-      .filter(p => p.name.toLowerCase().includes(q) || String(p.id).includes(q))
+      .filter(p => matchesPokemonSearch(p, searchPokemonText))
       .slice(0, 100);
   }, [searchPokemonText]);
 

@@ -12,6 +12,9 @@ import { useFavorites } from '../context/FavoritesContext';
 import { PokemonCard } from '../components/PokemonCard';
 import { pokemonIndex } from '../data/pokemonIndex';
 import { Ionicons } from '@expo/vector-icons';
+import { PikachuStickerBackground } from '../components/PikachuStickerBackground';
+import { PikachuFace } from '../components/PikachuFace';
+import { PikachuLoader } from '../components/PikachuLoader';
 
 export const FavoritesScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -33,6 +36,7 @@ export const FavoritesScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isPikachu && <PikachuStickerBackground />}
       {/* ── Offline Status & Header Banner ── */}
       {favoritedPokemonList.length > 0 && (
         <View style={[styles.headerBanner, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
@@ -57,7 +61,11 @@ export const FavoritesScreen = ({ navigation }) => {
           >
             {isPrecaching ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <ActivityIndicator size="small" color={theme.colors.primary} />
+                {theme.isPikachu ? (
+                  <PikachuLoader size={20} compact />
+                ) : (
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                )}
                 <Text style={[styles.syncBtnText, { color: theme.colors.primary }]}>
                   {precacheProgress.current}/{precacheProgress.total}
                 </Text>
@@ -76,6 +84,7 @@ export const FavoritesScreen = ({ navigation }) => {
         data={favoritedPokemonList}
         keyExtractor={(item, index) => `${item.id}-${item.name}-${index}`}
         numColumns={2}
+        keyboardShouldPersistTaps="handled"
         renderItem={({ item }) => (
           <View style={styles.gridColumn}>
             <PokemonCard pokemon={item} onPress={navigateToDetails} />
@@ -83,8 +92,16 @@ export const FavoritesScreen = ({ navigation }) => {
         )}
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Ionicons name="heart-dislike-outline" size={64} color={theme.colors.textSecondary} />
-            <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>No Favorites Yet</Text>
+            {theme.isPikachu ? (
+              <View style={{ alignItems: 'center', marginBottom: 14 }}>
+                <PikachuFace size={72} />
+              </View>
+            ) : (
+              <Ionicons name="heart-dislike-outline" size={64} color={theme.colors.textSecondary} />
+            )}
+            <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
+              {theme.isPikachu ? 'Pikachu is Waiting for Favorites!' : 'No Favorites Yet'}
+            </Text>
             <Text style={[styles.emptySub, { color: theme.colors.textSecondary }]}>
               Tap the heart icon on any Pokémon card or detail screen to store it locally for instant offline access.
             </Text>

@@ -7,6 +7,8 @@ export const ThemeContext = createContext();
 // Type Accent Color Palette
 export const TYPE_ACCENTS = {
   classic: { name: 'Poké Red', color: '#EF5350', light: '#FFEBEE', dark: '#2C1D1D' },
+  pikachu: { name: 'Pikachu Gold', color: '#FFD700', light: '#FFFDE7', dark: '#332A00' },
+  arceus: { name: 'Arceus Divine', color: '#E6C25B', light: '#FFF8E1', dark: '#241E0D' },
   fire: { name: 'Fire', color: '#F08030', light: '#FDF2E9', dark: '#331B0B' },
   water: { name: 'Water', color: '#3B82F6', light: '#EFF6FF', dark: '#0C2340' },
   electric: { name: 'Electric', color: '#F59E0B', light: '#FEF3C7', dark: '#382500' },
@@ -26,6 +28,8 @@ export const THEME_MODES = {
   DARK: 'dark',
   AMOLED: 'amoled',
   POKEDEX_RED: 'pokedex-red',
+  PIKACHU: 'pikachu',
+  ARCEUS: 'arceus',
 };
 
 // Helper to generate full theme object with selected accent
@@ -33,7 +37,70 @@ export const createTheme = (mode, accentKey = 'classic') => {
   const accent = TYPE_ACCENTS[accentKey] || TYPE_ACCENTS.classic;
   const isAmoled = mode === THEME_MODES.AMOLED;
   const isPokedexRed = mode === THEME_MODES.POKEDEX_RED;
-  const isDark = mode === THEME_MODES.DARK || isAmoled || isPokedexRed;
+  const isPikachu = mode === THEME_MODES.PIKACHU;
+  const isArceus = mode === THEME_MODES.ARCEUS;
+  const isDark = mode === THEME_MODES.DARK || isAmoled || isPokedexRed || isPikachu || isArceus;
+
+  if (isPikachu) {
+    return {
+      dark: true,
+      mode: THEME_MODES.PIKACHU,
+      accentKey,
+      isPikachu: true,
+      colors: {
+        background: '#1A1605', // Deep lightning-amber obsidian
+        card: '#272007', // Warm Pikachu amber card
+        cardBackground: '#272007',
+        surface: '#362C0B',
+        text: '#FFFDE7', // Warm bright cream yellow text
+        textSecondary: '#E5C158', // Goldenrod secondary
+        border: '#54430F', // Rich gold border
+        primary: '#FFD700', // Iconic Pikachu Electric Gold
+        primaryLight: 'rgba(255, 215, 0, 0.18)',
+        accent: '#FF3B30', // Cheek-Pouch Rosy Red
+        accentDark: '#D32F2F',
+        success: '#4CAF50',
+        info: '#00E5FF',
+        shadow: '#100C02',
+        skeleton: '#382F0F',
+        pokedexRed: '#FF3B30',
+        scannerCyan: '#FFD700',
+        pikachuYellow: '#FFD700',
+        pikachuCheek: '#FF3B30',
+        pikachuBrown: '#2A2006',
+      },
+    };
+  }
+
+  if (isArceus) {
+    return {
+      dark: true,
+      mode: THEME_MODES.ARCEUS,
+      accentKey,
+      isArceus: true,
+      colors: {
+        background: '#0B0F19', // Deep cosmic Sinnoh ether
+        card: '#131A2B', // Celestial platinum-slate
+        cardBackground: '#131A2B',
+        surface: '#1C263D', // Sacred temple altar surface
+        text: '#F5F7FA', // Divine platinum white
+        textSecondary: '#9AAEC7', // Starlight silver
+        border: '#DFC16E4D', // Gold filigree border
+        primary: '#E6C25B', // Sacred Arceus Celestial Gold
+        primaryLight: 'rgba(230, 194, 91, 0.2)',
+        accent: '#00E5FF', // Arc Phone Divine Cyan
+        accentDark: '#0097A7',
+        success: '#1DE9B6', // Jade life energy
+        info: '#E6C25B',
+        shadow: '#04060A',
+        skeleton: '#1F293D',
+        pokedexRed: '#E6C25B',
+        scannerCyan: '#00E5FF',
+        arceusGold: '#E6C25B',
+        arceusJade: '#00E5FF',
+      },
+    };
+  }
 
   if (isPokedexRed) {
     return {

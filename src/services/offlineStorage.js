@@ -9,11 +9,23 @@ const CACHE_PREFIX = '@poke_offline_v1_';
 const INDEX_KEY = '@poke_offline_index_v1';
 
 // L1 In-Memory Caches for instantaneous sync access
+const MAX_MEMORY_CACHE_ITEMS = 150;
+
 const memoryCache = {
   details: new Map(),
   evolution: new Map(),
   moves: new Map(),
   abilities: new Map(),
+};
+
+const safeMemorySet = (cacheMap, key, value) => {
+  if (cacheMap.size >= MAX_MEMORY_CACHE_ITEMS) {
+    const oldestKey = cacheMap.keys().next().value;
+    if (oldestKey !== undefined) {
+      cacheMap.delete(oldestKey);
+    }
+  }
+  cacheMap.set(key, value);
 };
 
 /**
@@ -59,8 +71,8 @@ export const getCachedPokemonDetails = async (idOrName) => {
     if (raw) {
       const data = JSON.parse(raw);
       // Populate memory cache for both ID and Name for fast dual lookups
-      if (data.id) memoryCache.details.set(String(data.id), data);
-      if (data.name) memoryCache.details.set(data.name.toLowerCase(), data);
+      if (data.id) safeMemorySet(memoryCache.details, String(data.id), data);
+      if (data.name) safeMemorySet(memoryCache.details, data.name.toLowerCase(), data);
       return data;
     }
   } catch (e) {
@@ -83,8 +95,8 @@ export const setCachedPokemonDetails = async (data) => {
   };
 
   // Save to L1 Memory
-  memoryCache.details.set(idStr, payload);
-  if (nameStr) memoryCache.details.set(nameStr, payload);
+  safeMemorySet(memoryCache.details, idStr, payload);
+  if (nameStr) safeMemorySet(memoryCache.details, nameStr, payload);
 
   // Save to L2 AsyncStorage
   try {
@@ -117,7 +129,7 @@ export const getCachedEvolutionChain = async (pokemonId) => {
     const raw = await AsyncStorage.getItem(storageKey);
     if (raw) {
       const data = JSON.parse(raw);
-      memoryCache.evolution.set(idStr, data);
+      safeMemorySet(memoryCache.evolution, idStr, data);
       return data;
     }
   } catch (e) {
@@ -131,7 +143,7 @@ export const setCachedEvolutionChain = async (pokemonId, data) => {
   if (!pokemonId || !data) return;
   const idStr = String(pokemonId);
 
-  memoryCache.evolution.set(idStr, data);
+  safeMemorySet(memoryCache.evolution, idStr, data);
 
   try {
     const storageKey = `${CACHE_PREFIX}evo_${idStr}`;
@@ -157,7 +169,7 @@ export const getCachedMove = async (moveName) => {
     const raw = await AsyncStorage.getItem(storageKey);
     if (raw) {
       const data = JSON.parse(raw);
-      memoryCache.moves.set(key, data);
+      safeMemorySet(memoryCache.moves, key, data);
       return data;
     }
   } catch (e) {
@@ -171,7 +183,7 @@ export const setCachedMove = async (moveName, data) => {
   if (!moveName || !data) return;
   const key = String(moveName).toLowerCase().trim();
 
-  memoryCache.moves.set(key, data);
+  safeMemorySet(memoryCache.moves, key, data);
 
   try {
     const storageKey = `${CACHE_PREFIX}move_${key}`;
@@ -196,7 +208,7 @@ export const getCachedAbility = async (abilityName) => {
     const storageKey = `${CACHE_PREFIX}ability_${key}`;
     const raw = await AsyncStorage.getItem(storageKey);
     if (raw) {
-      memoryCache.abilities.set(key, raw);
+      safeMemorySet(memoryCache.abilities, key, raw);
       return raw;
     }
   } catch (e) {
@@ -210,7 +222,7 @@ export const setCachedAbility = async (abilityName, text) => {
   if (!abilityName || !text) return;
   const key = String(abilityName).toLowerCase().trim();
 
-  memoryCache.abilities.set(key, text);
+  safeMemorySet(memoryCache.abilities, key, text);
 
   try {
     const storageKey = `${CACHE_PREFIX}ability_${key}`;

@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAudioPlayer } from 'expo-audio';
 import { useTheme } from '../context/ThemeContext';
 import { useFavorites } from '../context/FavoritesContext';
+import { useCollection } from '../context/CollectionContext';
 import { useTeam } from '../context/TeamContext';
 import {
   getPokemonDetails,
@@ -33,6 +34,7 @@ import { pokemonIndex } from '../data/pokemonIndex';
 import { newlyAddedPokemon } from '../data/newlyAdded';
 import { getPokemonDexColor, getSolidCardBg } from '../components/PokemonCard';
 import { PokeBallLoading } from '../components/PokeBallLoading';
+import { PikachuStickerBackground } from '../components/PikachuStickerBackground';
 
 const { width } = Dimensions.get('window');
 
@@ -224,6 +226,13 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
   const { id } = route.params;
   const { theme } = useTheme();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const {
+    isCaught,
+    toggleCaught,
+    isShiny: isShinyCaught,
+    toggleShiny: toggleShinyCaught,
+    markDiscovered,
+  } = useCollection();
   const { addToTeam, removeFromTeam, isInTeam, canAddToTeam } = useTeam();
   const insets = useSafeAreaInsets();
 
@@ -269,6 +278,7 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
           setDetails(pokeDetails);
           setEvolutionChain(pokeEvolutions);
           setLoading(false);
+          markDiscovered(id);
           if (pokeDetails.lore?.availableVersions?.length > 0) {
             setSelectedLoreVersion(pokeDetails.lore.availableVersions[0]);
           }
@@ -418,6 +428,7 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
 
   return (
     <View style={[styles.rootContainer, { backgroundColor: screenBgColor }]}>
+      {theme.isPikachu && <PikachuStickerBackground opacity={0.20} />}
       {/* ── Modals ── */}
       {/* Lore version picker */}
       {details.lore?.availableVersions?.length > 0 && (
@@ -602,6 +613,36 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
               #{String(details.id).padStart(4, '0')}
             </Text>
             <View style={styles.actionRow}>
+              {/* Caught status toggle */}
+              <TouchableOpacity
+                onPress={() => toggleCaught(details.id)}
+                style={[
+                  styles.roundActionBtn,
+                  { backgroundColor: isCaught(details.id) ? '#4CAF50' : theme.colors.card }
+                ]}
+              >
+                <Ionicons
+                  name={isCaught(details.id) ? 'checkmark-circle' : 'radio-button-off'}
+                  size={20}
+                  color={isCaught(details.id) ? '#ffffff' : theme.colors.textSecondary}
+                />
+              </TouchableOpacity>
+
+              {/* Shiny collection toggle */}
+              <TouchableOpacity
+                onPress={() => toggleShinyCaught(details.id)}
+                style={[
+                  styles.roundActionBtn,
+                  { backgroundColor: isShinyCaught(details.id) ? '#FFD700' : theme.colors.card }
+                ]}
+              >
+                <Ionicons
+                  name="sparkles"
+                  size={19}
+                  color={isShinyCaught(details.id) ? '#000000' : theme.colors.textSecondary}
+                />
+              </TouchableOpacity>
+
               <TouchableOpacity
                 onPress={() => navigation.navigate('StatCalculator', { pokemon: details, id: details.id })}
                 style={[styles.roundActionBtn, { backgroundColor: theme.colors.card }]}
