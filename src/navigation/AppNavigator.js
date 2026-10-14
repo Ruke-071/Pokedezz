@@ -78,7 +78,7 @@ export default function AppNavigator() {
                     <ArceusPlate type="normal" size={24} />
                   ) : (
                     <Image
-                      source={require('../../assets/legends-arceus-pokedex.png')}
+                      source={require('../../assets/legends-arceus-pokedex-fixed.png')}
                       style={{ width: 24, height: 24, borderRadius: 5 }}
                       resizeMode="contain"
                     />
@@ -192,7 +192,15 @@ export default function AppNavigator() {
         <RootStack.Screen
           name="StatCalculator"
           component={StatCalculatorScreen}
-          options={{ title: 'Stat Calculator' }}
+          options={{
+            headerTitle: () => (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                {theme.isPikachu && <PikachuFace size={22} expression="happy" />}
+                {theme.isEevee && <EeveeFace size={22} expression="cheerful" showCollar={false} />}
+                <Text style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text }}>Stat Calculator</Text>
+              </View>
+            ),
+          }}
         />
         <RootStack.Screen
           name="Settings"

@@ -98,7 +98,7 @@ export const Sidebar = () => {
           screen: 'Home',
           title: 'Pokédex',
           subtitle: 'All 1,025 Pokémon database',
-          imageIcon: require('../../assets/legends-arceus-pokedex.png'),
+          imageIcon: require('../../assets/legends-arceus-pokedex-fixed.png'),
           icon: 'book-outline',
           color: '#E6C25B',
           badge: '1025',
@@ -298,7 +298,7 @@ export const Sidebar = () => {
                   <ArceusPlate type="normal" size={26} />
                 ) : (
                   <Image
-                    source={require('../../assets/legends-arceus-pokedex.png')}
+                    source={require('../../assets/legends-arceus-pokedex-fixed.png')}
                     style={{ width: 28, height: 28, borderRadius: 5 }}
                     resizeMode="contain"
                   />

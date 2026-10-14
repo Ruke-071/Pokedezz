@@ -42,7 +42,10 @@ export const StatCalculatorScreen = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
 
   // Selected Pokemon from params or default to Charizard (#6) or Bulbasaur (#1)
-  const initialPokemon = route.params?.pokemon || pokemonIndex.find(p => p.id === (route.params?.id || 6)) || pokemonIndex[0];
+  const initialPokemon =
+    route?.params?.pokemon ||
+    pokemonIndex.find(p => p.id === (route?.params?.id || 6)) ||
+    pokemonIndex[0];
 
   const [selectedPokemon, setSelectedPokemon] = useState(initialPokemon);
   const [level, setLevel] = useState(100);
@@ -81,17 +84,17 @@ export const StatCalculatorScreen = ({ route, navigation }) => {
 
   // When route params change (e.g. Navigating with a new Pokemon)
   useEffect(() => {
-    if (route.params?.pokemon) {
+    if (route?.params?.pokemon) {
       setSelectedPokemon(route.params.pokemon);
       setEvioliteOverride(null);
-    } else if (route.params?.id) {
+    } else if (route?.params?.id) {
       const match = pokemonIndex.find(p => p.id === route.params.id);
       if (match) {
         setSelectedPokemon(match);
         setEvioliteOverride(null);
       }
     }
-  }, [route.params]);
+  }, [route?.params]);
 
   // Extract base stats from selected Pokemon (supports pokemonIndex, getPokemonDetails, and raw PokeAPI)
   const baseStats = useMemo(() => {
@@ -182,25 +185,49 @@ export const StatCalculatorScreen = ({ route, navigation }) => {
 
   // Compute calculated stats (standard without item)
   const calculated = useMemo(() => {
-    return calculatePokemonStats({
-      baseStats,
-      ivs,
-      evs,
-      level,
-      nature,
-    });
+    try {
+      return calculatePokemonStats({
+        baseStats,
+        ivs,
+        evs,
+        level,
+        nature,
+      });
+    } catch (e) {
+      console.warn('Error in calculatePokemonStats:', e);
+      return {
+        stats: { hp: 100, attack: 100, defense: 100, spAtk: 100, spDef: 100, speed: 100 },
+        total: 600,
+        baseStats: { hp: 50, attack: 50, defense: 50, spAtk: 50, spDef: 50, speed: 50 },
+        baseTotal: 300,
+      };
+    }
   }, [baseStats, ivs, evs, level, nature]);
 
   // Compute stats with Held Item applied
   const itemCalculated = useMemo(() => {
-    return calculateItemStats({
-      calculatedStats: calculated.stats,
-      heldItem,
-      pokemon: selectedPokemon,
-      customConfig: customItemConfig,
-      evioliteEligible: evioliteOverride,
-    });
-  }, [calculated.stats, heldItem, selectedPokemon, customItemConfig, evioliteOverride]);
+    try {
+      return calculateItemStats({
+        calculatedStats: calculated?.stats,
+        heldItem,
+        pokemon: selectedPokemon,
+        customConfig: customItemConfig,
+        evioliteEligible: evioliteOverride,
+      });
+    } catch (e) {
+      console.warn('Error in calculateItemStats:', e);
+      return {
+        stats: calculated?.stats || { hp: 100, attack: 100, defense: 100, spAtk: 100, spDef: 100, speed: 100 },
+        multipliers: {},
+        statDiffs: { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
+        total: calculated?.total || 600,
+        diffTotal: 0,
+        isActive: false,
+        statusMessage: 'Item calculation unavailable',
+        badge: 'No Item',
+      };
+    }
+  }, [calculated?.stats, calculated?.total, heldItem, selectedPokemon, customItemConfig, evioliteOverride]);
 
   // EV Budget calculation
   const evBudget = useMemo(() => getEvBudget(evs), [evs]);
@@ -1068,12 +1095,13 @@ export const StatCalculatorScreen = ({ route, navigation }) => {
                 const isLatiosLatias = selectedPokemon?.name?.toLowerCase().includes('latios') || selectedPokemon?.name?.toLowerCase().includes('latias');
 
                 let speciesMatch = null;
-                if (item.species) {
-                  if (item.species.includes('pikachu')) speciesMatch = isPikachu;
-                  else if (item.species.includes('cubone')) speciesMatch = isCuboneOrMarowak;
-                  else if (item.species.includes('clamperl')) speciesMatch = isClamperl;
-                  else if (item.species.includes('ditto')) speciesMatch = isDitto;
-                  else if (item.species.includes('latios')) speciesMatch = isLatiosLatias;
+                const speciesList = item.species || item.speciesLock || [];
+                if (Array.isArray(speciesList) && speciesList.length > 0) {
+                  if (speciesList.some(s => s.toLowerCase().includes('pikachu'))) speciesMatch = isPikachu;
+                  else if (speciesList.some(s => s.toLowerCase().includes('cubone') || s.toLowerCase().includes('marowak'))) speciesMatch = isCuboneOrMarowak;
+                  else if (speciesList.some(s => s.toLowerCase().includes('clamperl'))) speciesMatch = isClamperl;
+                  else if (speciesList.some(s => s.toLowerCase().includes('ditto'))) speciesMatch = isDitto;
+                  else if (speciesList.some(s => s.toLowerCase().includes('latios') || s.toLowerCase().includes('latias'))) speciesMatch = isLatiosLatias;
                 }
 
                 return (
@@ -1119,7 +1147,7 @@ export const StatCalculatorScreen = ({ route, navigation }) => {
                           {speciesMatch ? (
                             <Text style={styles.compatSuccessText}>✓ Compatible with {selectedPokemon?.name ? selectedPokemon.name.toUpperCase() : 'Pokémon'}!</Text>
                           ) : (
-                            <Text style={styles.compatWarnText}>⚠️ Only activates for {item.species.join(' / ').toUpperCase()} (Inactive)</Text>
+                            <Text style={styles.compatWarnText}>⚠️ Only activates for {speciesList.join(' / ').toUpperCase()} (Inactive)</Text>
                           )}
                         </View>
                       )}

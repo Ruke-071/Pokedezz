@@ -26,6 +26,7 @@ export const ITEM_CATEGORIES = [
   { id: 'mega', name: 'Mega & Z-Crystals' },
   { id: 'gems', name: 'Gems' },
   { id: 'utility', name: 'Training & Utility' },
+  { id: 'custom', name: 'Custom' },
 ];
 
 export const HELD_ITEMS = [
@@ -36,6 +37,15 @@ export const HELD_ITEMS = [
     "sprite": null,
     "description": "No item held. Stats remain at their standard calculated values.",
     "badge": "No Item",
+    "multipliers": {}
+  },
+  {
+    "id": "custom",
+    "name": "Custom Modifier",
+    "category": "custom",
+    "sprite": null,
+    "description": "Configurable stat modifier. Adjust targeted stat and multiplier in controls.",
+    "badge": "Custom",
     "multipliers": {}
   },
   {
@@ -5245,60 +5255,159 @@ export const findHeldItemById = (id) => {
 
 export const checkCanEvolve = (pokemon) => {
   if (!pokemon) return false;
-  // If explicitly flagged or known single-stage
-  if (pokemon.canEvolve !== undefined) return pokemon.canEvolve;
-  return true;
+  if (pokemon.canEvolve !== undefined) return Boolean(pokemon.canEvolve);
+
+  // If evolution chain was passed or attached
+  if (pokemon.evolutionChain) {
+    if (Array.isArray(pokemon.evolutionChain.evolvesTo) && pokemon.evolutionChain.evolvesTo.length > 0) {
+      return true;
+    }
+  }
+
+  // Check known unevolved competitive Eviolite staples & middle-stage evolutions
+  const name = (pokemon.name || '').toLowerCase().trim();
+  const baseName = name.split('-')[0];
+
+  const UNEVOLVED_SET = new Set([
+    'chansey', 'porygon2', 'dusclops', 'bisharp', 'gligar', 'corsola', 'scyther',
+    'rhydon', 'magneton', 'electabuzz', 'magmar', 'porygon', 'doublade', 'clefairy',
+    'haunter', 'kadabra', 'machoke', 'graveler', 'pikachu', 'eevee', 'misdreavus',
+    'murkrow', 'sneasel', 'tangela', 'yanma', 'aipom', 'roselia', 'piloswine',
+    'togetic', 'duskull', 'vigoroth', 'seadra', 'golbat', 'slowpoke', 'poliwhirl',
+    'gloom', 'weepinbell', 'nidorino', 'nidorina', 'dragonair', 'pupitar', 'shelgon',
+    'metang', 'gabite', 'fraxure', 'zweilous', 'sliggoo', 'drakloak', 'charmeleon',
+    'wartortle', 'ivysaur', 'quilava', 'croconaw', 'bayleef', 'combusken', 'marshtomp',
+    'grovyle', 'monferno', 'prinplup', 'grotle', 'pignite', 'dewott', 'servine',
+    'braixen', 'frogadier', 'quilladin', 'torracat', 'brionne', 'dartrix', 'thwackey',
+    'raboot', 'drizzile', 'crocalor', 'quaxwell', 'floragato', 'girafarig', 'dunsparce',
+    'primeape', 'stantler', 'qwilfish', 'basculin', 'pawniard', 'tinkatuff', 'nacli'
+  ]);
+
+  if (UNEVOLVED_SET.has(name) || UNEVOLVED_SET.has(baseName)) {
+    return true;
+  }
+
+  // Legendaries and Mythicals cannot evolve (except Cosmog line / Kubfu / Poipole)
+  if (pokemon.isLegendary || pokemon.isMythical) {
+    if (['cosmog', 'cosmoem', 'kubfu', 'poipole', 'meltan'].includes(name)) return true;
+    return false;
+  }
+
+  return false;
 };
 
-export const applyHeldItemStatMods = (rawStats, heldItemId, pokemon = null, evioliteEligible = null) => {
-  const item = findHeldItemById(heldItemId);
+/**
+ * Calculate Pokémon stats with held item modifiers applied.
+ * Supports both options object:
+ *   calculateItemStats({ calculatedStats, heldItem, pokemon, customConfig, evioliteEligible })
+ * and positional parameters:
+ *   calculateItemStats(calculatedStats, heldItem, pokemon, evioliteEligible)
+ */
+export const calculateItemStats = (paramsOrStats, maybeHeldItem, maybePokemon, maybeEvioliteEligible) => {
+  let calculatedStats;
+  let heldItem;
+  let pokemon;
+  let customConfig;
+  let evioliteEligible = null;
+
+  if (paramsOrStats && typeof paramsOrStats === 'object' && ('calculatedStats' in paramsOrStats || 'heldItem' in paramsOrStats)) {
+    calculatedStats = paramsOrStats.calculatedStats;
+    heldItem = paramsOrStats.heldItem;
+    pokemon = paramsOrStats.pokemon;
+    customConfig = paramsOrStats.customConfig;
+    if (paramsOrStats.evioliteEligible !== undefined) {
+      evioliteEligible = paramsOrStats.evioliteEligible;
+    }
+  } else {
+    calculatedStats = paramsOrStats;
+    heldItem = maybeHeldItem;
+    pokemon = maybePokemon;
+    if (maybeEvioliteEligible !== undefined) {
+      evioliteEligible = maybeEvioliteEligible;
+    }
+  }
+
   const safeStats = {
-    hp: rawStats?.hp || 1,
-    attack: rawStats?.attack || 1,
-    defense: rawStats?.defense || 1,
-    spAtk: rawStats?.spAtk || 1,
-    spDef: rawStats?.spDef || 1,
-    speed: rawStats?.speed || 1,
+    hp: Math.max(1, Number(calculatedStats?.hp) || 1),
+    attack: Math.max(1, Number(calculatedStats?.attack) || 1),
+    defense: Math.max(1, Number(calculatedStats?.defense) || 1),
+    spAtk: Math.max(1, Number(calculatedStats?.spAtk) || 1),
+    spDef: Math.max(1, Number(calculatedStats?.spDef) || 1),
+    speed: Math.max(1, Number(calculatedStats?.speed) || 1),
   };
 
-  if (!item || item.id === 'none') {
-    return {
-      stats: { ...safeStats },
-      multipliers: {},
-      statDiffs: { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
-      total: Object.values(safeStats).reduce((a, b) => a + b, 0),
-      diffTotal: 0,
-      isActive: false,
-      statusMessage: 'No item held.',
-      badge: 'No Item',
-    };
+  const itemId = typeof heldItem === 'string' ? heldItem : (heldItem?.id || 'none');
+  const itemObj = (typeof heldItem === 'object' && heldItem !== null) ? heldItem : findHeldItemById(itemId);
+
+  const fallbackResult = {
+    stats: { ...safeStats },
+    multipliers: {},
+    statDiffs: { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
+    total: Object.values(safeStats).reduce((a, b) => a + b, 0),
+    diffTotal: 0,
+    isActive: false,
+    statusMessage: 'No item held.',
+    badge: 'No Item',
+  };
+
+  if (!itemObj || itemObj.id === 'none') {
+    return fallbackResult;
   }
 
   let isActive = true;
-  let activeBadge = item.badge || 'Active';
-  let statusMessage = item.description;
+  let activeBadge = itemObj.badge || 'Active';
+  let statusMessage = itemObj.description || 'Active held item';
   const appliedMultipliers = {};
 
-  // 1. Species lock check
-  if (item.speciesLock && item.speciesLock.length > 0) {
+  // 1. Custom Modifier
+  if (itemObj.id === 'custom' || itemObj.category === 'custom' || itemId === 'custom') {
+    const targetStat = customConfig?.stat || 'attack';
+    const multiplier = typeof customConfig?.multiplier === 'number' ? customConfig.multiplier : 1.5;
+    appliedMultipliers[targetStat] = multiplier;
+    isActive = true;
+    const statName = STAT_LABELS[targetStat] || targetStat.toUpperCase();
+    activeBadge = `${multiplier}× ${statName}`;
+    statusMessage = `Custom Modifier: ${statName} multiplied by ${multiplier}×.`;
+  }
+  // 2. Species-locked items (Light Ball, Thick Club, etc.)
+  else if ((itemObj.speciesLock && itemObj.speciesLock.length > 0) || (itemObj.species && itemObj.species.length > 0)) {
+    const lockList = itemObj.speciesLock || itemObj.species || [];
     const currentName = (pokemon?.name || '').toLowerCase();
-    const isMatched = item.speciesLock.some(
-      (lock) => currentName.includes(lock) || currentName === lock
-    );
+    const isMatched = lockList.some((lock) => currentName.includes(lock.toLowerCase()) || currentName === lock.toLowerCase());
+
     if (!isMatched) {
       isActive = false;
-      statusMessage = `Inactive: ${item.name} only activates for ${item.speciesLock.join(', ').toUpperCase()}.`;
+      statusMessage = `Inactive: ${itemObj.name} only activates for ${lockList.join(', ').toUpperCase()}.`;
       activeBadge = 'Inactive (Species Lock)';
     } else {
-      Object.entries(item.multipliers || {}).forEach(([k, v]) => {
-        appliedMultipliers[k] = v;
-      });
-      statusMessage = `Active: ${item.name} doubles ${pokemon?.name ? pokemon.name.toUpperCase() : 'Pokémon'}’s stats!`;
+      if (itemObj.multipliers && Object.keys(itemObj.multipliers).length > 0) {
+        Object.entries(itemObj.multipliers).forEach(([k, v]) => {
+          appliedMultipliers[k] = v;
+        });
+      } else if (itemObj.id === 'light-ball') {
+        appliedMultipliers.attack = 2.0;
+        appliedMultipliers.spAtk = 2.0;
+      } else if (itemObj.id === 'thick-club') {
+        appliedMultipliers.attack = 2.0;
+      } else if (itemObj.id === 'deep-sea-tooth') {
+        appliedMultipliers.spAtk = 2.0;
+      } else if (itemObj.id === 'deep-sea-scale') {
+        appliedMultipliers.spDef = 2.0;
+      } else if (itemObj.id === 'quick-powder') {
+        appliedMultipliers.speed = 2.0;
+      } else if (itemObj.id === 'metal-powder') {
+        appliedMultipliers.defense = 1.5;
+      } else if (itemObj.id === 'soul-dew') {
+        appliedMultipliers.spAtk = 1.2;
+        appliedMultipliers.spDef = 1.2;
+      }
+      activeBadge = 'Species Boost';
+      statusMessage = `Active: ${itemObj.name} boosts ${pokemon?.name ? pokemon.name.toUpperCase() : 'Pokémon'}’s stats!`;
     }
   }
-  // 2. Eviolite Check
-  else if (item.isEviolite) {
-    const canEvolve = evioliteEligible !== null ? evioliteEligible : checkCanEvolve(pokemon);
+  // 3. Eviolite Check
+  else if (itemObj.isEviolite || itemId === 'eviolite') {
+    const canEvolve = evioliteEligible !== null ? Boolean(evioliteEligible) : checkCanEvolve(pokemon);
     if (!canEvolve) {
       isActive = false;
       statusMessage = 'Inactive: Eviolite only activates for Pokémon that can still evolve.';
@@ -5306,11 +5415,12 @@ export const applyHeldItemStatMods = (rawStats, heldItemId, pokemon = null, evio
     } else {
       appliedMultipliers.defense = 1.5;
       appliedMultipliers.spDef = 1.5;
+      activeBadge = '+50% Def / SpD';
       statusMessage = 'Active: +50% Defense and Special Defense for evolving Pokémon.';
     }
   }
-  // 3. Booster Energy
-  else if (item.isBoosterEnergy) {
+  // 4. Booster Energy (Paradox Pokémon)
+  else if (itemObj.isBoosterEnergy || itemId === 'booster-energy') {
     const nonHpKeys = ['attack', 'defense', 'spAtk', 'spDef', 'speed'];
     let highestKey = 'attack';
     let highestVal = -1;
@@ -5324,18 +5434,41 @@ export const applyHeldItemStatMods = (rawStats, heldItemId, pokemon = null, evio
     const boost = highestKey === 'speed' ? 1.5 : 1.3;
     appliedMultipliers[highestKey] = boost;
     const boostPct = highestKey === 'speed' ? '+50%' : '+30%';
-    activeBadge = `${boostPct} ${STAT_LABELS[highestKey]}`;
-    statusMessage = `Active: Boosts highest stat (${STAT_LABELS[highestKey]} ${highestVal}) by ${boostPct}.`;
+    activeBadge = `${boostPct} ${STAT_LABELS[highestKey] || highestKey}`;
+    statusMessage = `Active: Boosts highest stat (${STAT_LABELS[highestKey] || highestKey} ${highestVal}) by ${boostPct}.`;
   }
-  // 4. Standard multipliers
-  else if (item.multipliers) {
-    Object.entries(item.multipliers).forEach(([k, v]) => {
-      appliedMultipliers[k] = v;
+  // 5. Choice Band / Specs / Scarf / Assault Vest shortcuts
+  else if (itemId === 'choice-band') {
+    appliedMultipliers.attack = 1.5;
+    activeBadge = '+50% Attack';
+    statusMessage = 'Active: +50% Attack (locks into first move selected).';
+  } else if (itemId === 'choice-specs') {
+    appliedMultipliers.spAtk = 1.5;
+    activeBadge = '+50% Sp. Atk';
+    statusMessage = 'Active: +50% Special Attack (locks into first move selected).';
+  } else if (itemId === 'choice-scarf') {
+    appliedMultipliers.speed = 1.5;
+    activeBadge = '+50% Speed';
+    statusMessage = 'Active: +50% Speed (locks into first move selected).';
+  } else if (itemId === 'assault-vest') {
+    appliedMultipliers.spDef = 1.5;
+    activeBadge = '+50% Sp. Def';
+    statusMessage = 'Active: +50% Special Defense (prevents status moves).';
+  }
+  // 6. Generic Multipliers
+  else if (itemObj.multipliers && Object.keys(itemObj.multipliers).length > 0) {
+    Object.entries(itemObj.multipliers).forEach(([k, v]) => {
+      if (typeof v === 'number') appliedMultipliers[k] = v;
     });
-    statusMessage = item.description;
+    statusMessage = itemObj.description || 'Active competitive held item.';
+  } else {
+    // Non-stat battle item (e.g. Focus Sash, Leftovers, Lum Berry)
+    isActive = true;
+    activeBadge = itemObj.badge || 'Battle Item';
+    statusMessage = itemObj.description || 'Tactical battle effect active.';
   }
 
-  // Calculate final effective stats
+  // Calculate final effective stats & differences
   const finalStats = {};
   const statDiffs = {};
   STAT_KEYS.forEach((key) => {
@@ -5364,3 +5497,11 @@ export const applyHeldItemStatMods = (rawStats, heldItemId, pokemon = null, evio
     badge: activeBadge,
   };
 };
+
+/**
+ * Backward compatibility alias for legacy callers
+ */
+export const applyHeldItemStatMods = (rawStats, heldItemId, pokemon = null, evioliteEligible = null) => {
+  return calculateItemStats(rawStats, heldItemId, pokemon, evioliteEligible);
+};
+
