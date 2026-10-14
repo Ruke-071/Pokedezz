@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { TYPE_COLORS } from '../components/FilterModal';
 import { getMoveDetails } from '../services/pokemonService';
+import { PokeBallLoading } from '../components/PokeBallLoading';
 
 const MoveListItem = ({ move, theme, onPress, typeColor, levelPrefix }) => {
   const [details, setDetails] = useState(null);
@@ -271,10 +272,7 @@ export const MovesetScreen = ({ route }) => {
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsModalVisible(false)}>
           <TouchableOpacity activeOpacity={1} style={[styles.modalContent, { backgroundColor: theme.colors.card }]}>
             {isLoadingMove ? (
-              <View style={styles.modalLoading}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
-                <Text style={{ color: theme.colors.textSecondary, marginTop: 10 }}>Loading Move Data...</Text>
-              </View>
+              <PokeBallLoading size={44} message="Accessing Move Data..." />
             ) : moveDetails ? (
               <View>
                 <View style={[styles.modalHeader, { backgroundColor: TYPE_COLORS[moveDetails.type] || theme.colors.primary }]}>

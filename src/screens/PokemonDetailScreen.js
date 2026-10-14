@@ -32,6 +32,7 @@ import { championsPokemon } from '../data/championsPokemon';
 import { pokemonIndex } from '../data/pokemonIndex';
 import { newlyAddedPokemon } from '../data/newlyAdded';
 import { getPokemonDexColor, getSolidCardBg } from '../components/PokemonCard';
+import { PokeBallLoading } from '../components/PokeBallLoading';
 
 const { width } = Dimensions.get('window');
 
@@ -344,10 +345,7 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
 
   if (loading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>Loading PokéData...</Text>
-      </View>
+      <PokeBallLoading fullScreen size={64} message="Accessing Pokédex Data..." />
     );
   }
 

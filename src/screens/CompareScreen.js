@@ -16,6 +16,7 @@ import { getPokemonDetails } from '../services/pokemonService';
 import { pokemonIndex } from '../data/pokemonIndex';
 import { TYPE_COLORS } from '../components/FilterModal';
 import { Ionicons } from '@expo/vector-icons';
+import { PokeBallLoading } from '../components/PokeBallLoading';
 
 export const CompareScreen = () => {
   const { theme } = useTheme();
@@ -234,10 +235,7 @@ export const CompareScreen = () => {
 
         {/* Loading details state */}
         {loading && (
-          <View style={styles.centerLoading}>
-            <ActivityIndicator color={theme.colors.primary} />
-            <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>Fetching details...</Text>
-          </View>
+          <PokeBallLoading size={44} message="Fetching PokéData for comparison..." />
         )}
 
         {/* Display Side-By-Side Comparison */}

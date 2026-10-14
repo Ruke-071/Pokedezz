@@ -19,6 +19,7 @@ import { pokemonIndex } from '../data/pokemonIndex';
 import { championsPokemon } from '../data/championsPokemon';
 import { newlyAddedPokemon } from '../data/newlyAdded';
 import { Ionicons } from '@expo/vector-icons';
+import { PokeBallLoading } from '../components/PokeBallLoading';
 
 export const HomeScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -224,7 +225,7 @@ export const HomeScreen = ({ navigation }) => {
           if (displayedItems < filteredPokemonList.length) {
             return (
               <View style={styles.loaderFooter}>
-                <ActivityIndicator color={theme.colors.primary} />
+                <PokeBallLoading size={32} message="" />
               </View>
             );
           }

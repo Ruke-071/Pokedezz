@@ -3,25 +3,30 @@ import {
   View,
   Text,
   StyleSheet,
-  Switch,
   TouchableOpacity,
   Linking,
   ScrollView,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme, THEME_MODES, TYPE_ACCENTS } from '../context/ThemeContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { getOfflineCacheStats, clearOfflineCache } from '../services/offlineStorage';
+import { PokeBallLoading } from '../components/PokeBallLoading';
 import { Ionicons } from '@expo/vector-icons';
 
 export const SettingsScreen = () => {
-  const { theme, isDarkMode, toggleTheme } = useTheme();
+  const {
+    theme,
+    themeMode,
+    accentKey,
+    changeThemeMode,
+    changeAccent,
+  } = useTheme();
+
   const {
     favorites,
     precacheAllFavorites,
     isPrecaching,
-    precacheProgress,
   } = useFavorites();
 
   const [cacheStats, setCacheStats] = useState({
@@ -32,6 +37,7 @@ export const SettingsScreen = () => {
     totalEntries: 0,
   });
   const [clearing, setClearing] = useState(false);
+  const [showDemoLoader, setShowDemoLoader] = useState(false);
 
   const loadStats = async () => {
     const stats = await getOfflineCacheStats();
@@ -71,35 +77,184 @@ export const SettingsScreen = () => {
     Linking.openURL('https://expo.dev');
   };
 
+  const themeOptions = [
+    {
+      id: THEME_MODES.POKEDEX_RED,
+      name: 'Pokédex Red',
+      desc: 'Classic scarlet casing & cyan scanner',
+      icon: 'radio-outline',
+      color: '#DC0A2D',
+    },
+    {
+      id: THEME_MODES.AMOLED,
+      name: 'Dark AMOLED',
+      desc: 'Pure #000000 pitch-black OLED mode',
+      icon: 'contrast-outline',
+      color: '#000000',
+    },
+    {
+      id: THEME_MODES.DARK,
+      name: 'Dark Mode',
+      desc: 'Deep navy charcoal surfaces',
+      icon: 'moon-outline',
+      color: '#1A1A1E',
+    },
+    {
+      id: THEME_MODES.LIGHT,
+      name: 'Light Mode',
+      desc: 'Clean paper white aesthetic',
+      icon: 'sunny-outline',
+      color: '#FFFFFF',
+    },
+  ];
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.content}>
-        {/* Theme Settings Section */}
+        {/* ── Section 1: Custom Pokédex Themes ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>PREFERENCES</Text>
-          <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-            <View style={styles.settingRow}>
-              <View style={styles.settingLabelContainer}>
-                <Ionicons name="moon" size={20} color={theme.colors.primary} style={styles.settingIcon} />
-                <View>
-                  <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Dark Mode</Text>
-                  <Text style={[styles.settingSub, { color: theme.colors.textSecondary }]}>Switch between light and dark themes</Text>
-                </View>
+          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
+            CUSTOM POKÉDEX THEMES
+          </Text>
+
+          {/* Theme Mode Cards Grid */}
+          <View style={styles.themeModeGrid}>
+            {themeOptions.map(opt => {
+              const isSelected = themeMode === opt.id;
+              return (
+                <TouchableOpacity
+                  key={opt.id}
+                  style={[
+                    styles.themeModeCard,
+                    {
+                      backgroundColor: theme.colors.card,
+                      borderColor: isSelected ? theme.colors.primary : theme.colors.border,
+                      borderWidth: isSelected ? 2 : 1,
+                    },
+                    isSelected && { shadowColor: theme.colors.primary, elevation: 4 },
+                  ]}
+                  onPress={() => changeThemeMode(opt.id)}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.themeCardTop}>
+                    <View
+                      style={[
+                        styles.colorSampleBubble,
+                        {
+                          backgroundColor: opt.color,
+                          borderColor: opt.id === THEME_MODES.LIGHT ? '#CBD5E0' : 'rgba(255,255,255,0.2)',
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={opt.icon}
+                        size={16}
+                        color={opt.id === THEME_MODES.LIGHT ? '#2D3748' : '#FFFFFF'}
+                      />
+                    </View>
+
+                    {isSelected && (
+                      <View style={[styles.selectedPill, { backgroundColor: theme.colors.primary }]}>
+                        <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                      </View>
+                    )}
+                  </View>
+
+                  <Text style={[styles.themeCardTitle, { color: theme.colors.text }]}>
+                    {opt.name}
+                  </Text>
+                  <Text style={[styles.themeCardDesc, { color: theme.colors.textSecondary }]}>
+                    {opt.desc}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* ── Section 2: Type-Based Accent Colors ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
+            TYPE-BASED ACCENT COLORS
+          </Text>
+
+          <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+            <View style={styles.accentIntroRow}>
+              <Ionicons name="color-palette-outline" size={20} color={theme.colors.primary} />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={[styles.accentIntroTitle, { color: theme.colors.text }]}>
+                  Elemental Accent: {TYPE_ACCENTS[accentKey]?.name || 'Classic'}
+                </Text>
+                <Text style={[styles.accentIntroSub, { color: theme.colors.textSecondary }]}>
+                  Applies dynamic highlight tones across buttons, badges, and meters
+                </Text>
               </View>
-              <Switch
-                value={isDarkMode}
-                onValueChange={toggleTheme}
-                trackColor={{ false: '#767577', true: theme.colors.primary }}
-                thumbColor={isDarkMode ? '#ffffff' : '#f4f3f4'}
-              />
+            </View>
+
+            {/* Accent Chips Grid */}
+            <View style={styles.accentChipsGrid}>
+              {Object.entries(TYPE_ACCENTS).map(([key, item]) => {
+                const isSelected = accentKey === key;
+                return (
+                  <TouchableOpacity
+                    key={`accent-${key}`}
+                    style={[
+                      styles.accentChip,
+                      {
+                        backgroundColor: isSelected ? `${item.color}25` : (theme.dark ? '#252B36' : '#F1F5F9'),
+                        borderColor: isSelected ? item.color : theme.colors.border,
+                        borderWidth: isSelected ? 2 : 1,
+                      },
+                    ]}
+                    onPress={() => changeAccent(key)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.accentColorDot, { backgroundColor: item.color }]} />
+                    <Text
+                      style={[
+                        styles.accentChipText,
+                        { color: isSelected ? item.color : theme.colors.text },
+                        isSelected && { fontWeight: '800' },
+                      ]}
+                    >
+                      {item.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
         </View>
 
-        {/* ── Offline Mode & Storage Management Section ── */}
+        {/* ── Section 3: Animated Poké Ball Loading Preview ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>OFFLINE-FIRST ENGINE</Text>
-          <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
+            ANIMATED POKÉ BALL LOADER
+          </Text>
+
+          <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, padding: 18, alignItems: 'center' }]}>
+            <PokeBallLoading size={54} message="Syncing Pokédex database..." />
+
+            <View style={[styles.loaderMetaRow, { borderTopColor: theme.colors.border }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="sparkles" size={16} color="#FFCB05" />
+                <Text style={[styles.loaderMetaText, { color: theme.colors.textSecondary }]}>
+                  Custom spin & glowing LED physics
+                </Text>
+              </View>
+              <View style={[styles.activeEngineBadge, { backgroundColor: `${theme.colors.primary}18`, borderColor: theme.colors.primary }]}>
+                <Text style={[styles.activeEngineBadgeText, { color: theme.colors.primary }]}>ACTIVE</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* ── Section 4: Offline-First Engine ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
+            OFFLINE-FIRST ENGINE
+          </Text>
+          <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
             {/* Status Header */}
             <View style={[styles.cacheHeaderRow, { borderBottomColor: theme.colors.border }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -148,16 +303,7 @@ export const SettingsScreen = () => {
                   </Text>
                 </View>
               </View>
-              {isPrecaching ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <ActivityIndicator size="small" color={theme.colors.primary} />
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: theme.colors.primary }}>
-                    {precacheProgress.current}/{precacheProgress.total}
-                  </Text>
-                </View>
-              ) : (
-                <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary} />
-              )}
+              <Ionicons name="chevron-forward" size={18} color={theme.colors.textSecondary} />
             </TouchableOpacity>
 
             {/* Clear Cache Button */}
@@ -170,71 +316,59 @@ export const SettingsScreen = () => {
               <View style={styles.cacheActionLeft}>
                 <Ionicons name="trash-outline" size={18} color="#FF5252" />
                 <View>
-                  <Text style={[styles.cacheActionTitle, { color: '#FF5252' }]}>Clear Cached API Data</Text>
+                  <Text style={[styles.cacheActionTitle, { color: '#FF5252' }]}>Clear Offline Cache</Text>
                   <Text style={[styles.cacheActionSub, { color: theme.colors.textSecondary }]}>
-                    Free up local storage space
+                    Reset locally stored API responses
                   </Text>
                 </View>
               </View>
-              {clearing ? (
-                <ActivityIndicator size="small" color="#FF5252" />
-              ) : (
-                <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary} />
-              )}
+              <Ionicons name="chevron-forward" size={18} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Champions Information Section */}
+        {/* ── Section 5: App Information ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>POKÉMON CHAMPIONS</Text>
-          <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-            <View style={styles.infoBlock}>
-              <Text style={[styles.infoTitle, { color: theme.colors.text }]}>What is Pokémon Champions?</Text>
-              <Text style={[styles.infoText, { color: theme.colors.textSecondary }]}>
-                Pokémon Champions is an action-packed custom battle-arena game mode. 
-                This Pokédex app automatically tags and filters Pokémon that are currently playable in Champions (🏆) 
-                and highlights any recently added combatants (✨).
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* About App Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>ABOUT APPLICATION</Text>
-          <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-            
-            {/* Version */}
+          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>APP IDENTITY & SYSTEM</Text>
+          <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
             <View style={[styles.listItem, { borderBottomColor: theme.colors.border }]}>
               <View style={styles.listItemLeft}>
-                <Ionicons name="information-circle" size={20} color={theme.colors.textSecondary} />
-                <Text style={[styles.listItemText, { color: theme.colors.text }]}>Version</Text>
+                <Ionicons name="phone-portrait-outline" size={20} color={theme.colors.primary} />
+                <Text style={[styles.listItemText, { color: theme.colors.text }]}>App Identity</Text>
               </View>
-              <Text style={[styles.listItemRight, { color: theme.colors.textSecondary }]}>1.0.0 (Production)</Text>
+              <Text style={[styles.listItemRight, { color: theme.colors.textSecondary }]}>Pokédex (Raydex v1.0)</Text>
             </View>
 
-            {/* PokeAPI */}
-            <TouchableOpacity onPress={openPokeApi} style={[styles.listItem, { borderBottomColor: theme.colors.border }]}>
+            <View style={[styles.listItem, { borderBottomColor: theme.colors.border }]}>
               <View style={styles.listItemLeft}>
-                <Ionicons name="globe" size={20} color={theme.colors.textSecondary} />
+                <Ionicons name="hardware-chip-outline" size={20} color={theme.colors.primary} />
+                <Text style={[styles.listItemText, { color: theme.colors.text }]}>Expo Framework</Text>
+              </View>
+              <Text style={[styles.listItemRight, { color: theme.colors.textSecondary }]}>SDK 57.0.0 (Native)</Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.listItem, { borderBottomColor: theme.colors.border }]}
+              onPress={openPokeApi}
+            >
+              <View style={styles.listItemLeft}>
+                <Ionicons name="server-outline" size={20} color={theme.colors.primary} />
                 <Text style={[styles.listItemText, { color: theme.colors.text }]}>Data Source</Text>
               </View>
               <View style={styles.listItemRightRow}>
-                <Text style={[styles.listItemRightLink, { color: theme.colors.info }]}>PokeAPI.co</Text>
-                <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary} />
+                <Text style={[styles.listItemRightLink, { color: theme.colors.primary }]}>PokeAPI.co</Text>
+                <Ionicons name="open-outline" size={14} color={theme.colors.primary} />
               </View>
             </TouchableOpacity>
 
-            {/* Framework */}
-            <TouchableOpacity onPress={openExpo} style={styles.listItem}>
+            <TouchableOpacity style={styles.listItem} onPress={openExpo}>
               <View style={styles.listItemLeft}>
-                <Ionicons name="phone-portrait" size={20} color={theme.colors.textSecondary} />
-                <Text style={[styles.listItemText, { color: theme.colors.text }]}>Built With</Text>
+                <Ionicons name="code-slash-outline" size={20} color={theme.colors.primary} />
+                <Text style={[styles.listItemText, { color: theme.colors.text }]}>Runtime</Text>
               </View>
               <View style={styles.listItemRightRow}>
-                <Text style={[styles.listItemRightLink, { color: theme.colors.info }]}>React Native + Expo SDK 57</Text>
-                <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary} />
+                <Text style={[styles.listItemRightLink, { color: theme.colors.primary }]}>React Native 0.86</Text>
+                <Ionicons name="open-outline" size={14} color={theme.colors.primary} />
               </View>
             </TouchableOpacity>
           </View>
@@ -258,45 +392,120 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: '800',
-    marginBottom: 8,
-    marginLeft: 4,
+    marginBottom: 10,
     letterSpacing: 0.8,
   },
   card: {
-    borderRadius: 16,
+    borderRadius: 18,
+    borderWidth: 1,
     overflow: 'hidden',
+  },
+
+  // Theme Mode Grid
+  themeModeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  themeModeCard: {
+    width: '48.5%',
+    borderRadius: 16,
+    padding: 14,
     elevation: 2,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
   },
-  settingRow: {
+  themeCardTop: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-  },
-  settingLabelContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    marginBottom: 10,
   },
-  settingIcon: {
-    marginRight: 14,
+  colorSampleBubble: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  settingLabel: {
-    fontSize: 15,
-    fontWeight: '700',
+  selectedPill: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  settingSub: {
+  themeCardTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 3,
+  },
+  themeCardDesc: {
     fontSize: 11,
-    marginTop: 2,
+    lineHeight: 15,
   },
-  cacheHeaderRow: {
-    padding: 16,
+
+  // Accent Chips
+  accentIntroRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 14,
+  },
+  accentIntroTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  accentIntroSub: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  accentChipsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    padding: 14,
+    paddingTop: 0,
+  },
+  accentChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+  },
+  accentColorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  accentChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  // Loader Preview
+  loaderMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    paddingTop: 12,
+    marginTop: 12,
+    borderTopWidth: 1,
+  },
+  loaderMetaText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+
+  // Cache Engine
+  cacheHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
     justifyContent: 'space-between',
     borderBottomWidth: 1,
   },
@@ -363,18 +572,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 1,
   },
-  infoBlock: {
-    padding: 16,
-  },
-  infoTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    marginBottom: 8,
-  },
-  infoText: {
-    fontSize: 13,
-    lineHeight: 20,
-  },
+
+  // List Items
   listItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
