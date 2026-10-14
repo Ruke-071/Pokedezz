@@ -30,6 +30,15 @@ import { matchesPokemonSearch } from '../utils/searchUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
+import {
+  PikachuPattern,
+  PikachuFace,
+  PikachuBadge,
+  EeveePattern,
+  EeveeFace,
+  EeveeBadge,
+  ArceusBackground,
+} from '../components';
 
 const { width } = Dimensions.get('window');
 
@@ -278,7 +287,13 @@ export const TeamBuilderScreen = ({ navigation }) => {
             activeOpacity={0.7}
           >
             <View style={[styles.emptySlotIconWrap, { backgroundColor: theme.dark ? '#232936' : '#EDF2F7' }]}>
-              <Ionicons name="add" size={24} color={theme.colors.primary} />
+              {theme.isPikachu ? (
+                <PikachuFace size={24} silhouette={true} silhouetteColor="rgba(225, 168, 0, 0.28)" />
+              ) : theme.isEevee ? (
+                <EeveeFace size={24} silhouette={true} silhouetteColor="rgba(166, 124, 82, 0.3)" showCollar={false} />
+              ) : (
+                <Ionicons name="add" size={24} color={theme.colors.primary} />
+              )}
             </View>
             <Text style={[styles.emptySlotText, { color: theme.colors.text }]}>Add Pokémon</Text>
             <Text style={[styles.emptySlotSub, { color: theme.colors.textSecondary }]}>Slot #{i + 1}</Text>
@@ -308,6 +323,9 @@ export const TeamBuilderScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isPikachu && <PikachuPattern subtle={true} opacity={0.16} />}
+      {theme.isEevee && <EeveePattern subtle={true} opacity={0.16} />}
+      {theme.isArceus && <ArceusBackground subtle={true} opacity={0.16} />}
       <ScrollView
         style={styles.container}
         contentContainerStyle={{ paddingBottom: 60 }}

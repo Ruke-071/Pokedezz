@@ -12,9 +12,18 @@ import { useFavorites } from '../context/FavoritesContext';
 import { PokemonCard } from '../components/PokemonCard';
 import { pokemonIndex } from '../data/pokemonIndex';
 import { Ionicons } from '@expo/vector-icons';
-import { PikachuStickerBackground } from '../components/PikachuStickerBackground';
-import { PikachuFace } from '../components/PikachuFace';
-import { PikachuLoader } from '../components/PikachuLoader';
+import {
+  PikachuPattern,
+  PikachuFace,
+  PikachuBadge,
+  PikachuLoader,
+  EeveePattern,
+  EeveeFace,
+  EeveeBadge,
+  EeveeLoader,
+  ArceusBackground,
+  ArceusPlate,
+} from '../components';
 
 export const FavoritesScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -36,17 +45,42 @@ export const FavoritesScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {theme.isPikachu && <PikachuStickerBackground />}
+      {theme.isPikachu && <PikachuPattern subtle={true} opacity={0.16} />}
+      {theme.isEevee && <EeveePattern subtle={true} opacity={0.16} />}
+      {theme.isArceus && <ArceusBackground subtle={true} opacity={0.16} />}
       {/* ── Offline Status & Header Banner ── */}
       {favoritedPokemonList.length > 0 && (
         <View style={[styles.headerBanner, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
           <View style={styles.headerInfo}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name="heart" size={16} color="#FF5252" />
-              <Text style={[styles.headerCount, { color: theme.colors.text }]}>
-                {favoritedPokemonList.length} Favorited
-              </Text>
-            </View>
+            {theme.isPikachu ? (
+              <PikachuBadge
+                text={`${favoritedPokemonList.length} Starred`}
+                variant="favorite"
+                favorited={true}
+                size="small"
+              />
+            ) : theme.isEevee ? (
+              <EeveeBadge
+                text={`${favoritedPokemonList.length} Starred`}
+                variant="favorite"
+                favorited={true}
+                size="small"
+              />
+            ) : theme.isArceus ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="bookmark" size={16} color="#C9A35B" />
+                <Text style={[styles.headerCount, { color: theme.colors.text, fontWeight: '800' }]}>
+                  {favoritedPokemonList.length} Inscribed in Hisui Journal
+                </Text>
+              </View>
+            ) : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="heart" size={16} color="#FF5252" />
+                <Text style={[styles.headerCount, { color: theme.colors.text }]}>
+                  {favoritedPokemonList.length} Favorited
+                </Text>
+              </View>
+            )}
             <View style={styles.offlinePill}>
               <Ionicons name="cloud-offline" size={12} color="#4CAF50" />
               <Text style={styles.offlinePillText}>Stored Locally · Offline Ready</Text>
@@ -63,6 +97,8 @@ export const FavoritesScreen = ({ navigation }) => {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 {theme.isPikachu ? (
                   <PikachuLoader size={20} compact />
+                ) : theme.isEevee ? (
+                  <EeveeLoader size={20} compact />
                 ) : (
                   <ActivityIndicator size="small" color={theme.colors.primary} />
                 )}
@@ -94,16 +130,36 @@ export const FavoritesScreen = ({ navigation }) => {
           <View style={styles.emptyContainer}>
             {theme.isPikachu ? (
               <View style={{ alignItems: 'center', marginBottom: 14 }}>
-                <PikachuFace size={72} />
+                <PikachuFace size={80} expression="sleepy" blushing={true} />
+              </View>
+            ) : theme.isEevee ? (
+              <View style={{ alignItems: 'center', marginBottom: 14 }}>
+                <EeveeFace size={80} expression="cheerful" blushing={true} />
+              </View>
+            ) : theme.isArceus ? (
+              <View style={{ alignItems: 'center', marginBottom: 14 }}>
+                <Ionicons name="book-outline" size={68} color="#C9A35B" />
               </View>
             ) : (
               <Ionicons name="heart-dislike-outline" size={64} color={theme.colors.textSecondary} />
             )}
             <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
-              {theme.isPikachu ? 'Pikachu is Waiting for Favorites!' : 'No Favorites Yet'}
+              {theme.isPikachu
+                ? 'Pikachu is Waiting for Favorites! ⚡'
+                : theme.isEevee
+                ? 'Eevee is Waiting for Favorites! 🐾'
+                : theme.isArceus
+                ? 'Hisui Journal Awaits Inscriptions 📜'
+                : 'No Favorites Yet'}
             </Text>
             <Text style={[styles.emptySub, { color: theme.colors.textSecondary }]}>
-              Tap the heart icon on any Pokémon card or detail screen to store it locally for instant offline access.
+              {theme.isPikachu
+                ? 'Tap the Pikachu face icon on any Pokémon card to save your starred team for instant offline access!'
+                : theme.isEevee
+                ? 'Tap the Eevee sticker icon on any Pokémon card to save your favorites for instant offline access!'
+                : theme.isArceus
+                ? 'Tap the bookmark icon on any Pokémon card to inscribe your chosen companions into your ancient survey field notes!'
+                : 'Tap the heart icon on any Pokémon card or detail screen to store it locally for instant offline access.'}
             </Text>
           </View>
         )}

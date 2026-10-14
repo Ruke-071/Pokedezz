@@ -23,7 +23,7 @@ import {
   findPokemonLocations,
 } from '../data/locationDexData';
 import { POKEMON_1025_HABITAT_INDEX } from '../data/pokemonHabitatDex';
-import { PikachuStickerBackground } from '../components/PikachuStickerBackground';
+import { PikachuPattern, EeveePattern, ArceusBackground } from '../components';
 
 const POPULAR_SEARCHES = [
   'pikachu',
@@ -783,8 +783,10 @@ export const LocationDexScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Pikachu Sticker Background if Pikachu theme is active */}
-      {theme.id === 'pikachu' && <PikachuStickerBackground opacity={0.16} />}
+      {/* Background Pattern */}
+      {theme.isPikachu && <PikachuPattern subtle={true} opacity={0.16} />}
+      {theme.isEevee && <EeveePattern subtle={true} opacity={0.16} />}
+      {theme.isArceus && <ArceusBackground subtle={true} opacity={0.16} />}
 
       {/* Top Main Mode Tabs: 3 Modes */}
       <View

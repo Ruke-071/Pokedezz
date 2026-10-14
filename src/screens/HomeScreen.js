@@ -21,8 +21,19 @@ import { newlyAddedPokemon } from '../data/newlyAdded';
 import { Ionicons } from '@expo/vector-icons';
 import { PokeBallLoading } from '../components/PokeBallLoading';
 import { matchesPokemonSearch } from '../utils/searchUtils';
-import { PikachuFaceWidget } from '../components/PikachuFaceTheme';
-import { PikachuStickerBackground } from '../components/PikachuStickerBackground';
+import {
+  PikachuPattern,
+  PikachuFace,
+  PikachuBadge,
+  PikachuFaceWidget,
+  EeveePattern,
+  EeveeFace,
+  EeveeBadge,
+  EeveeThemeWidget,
+  ArceusBackground,
+  ArceusPlate,
+  ARCEUS_PLATES,
+} from '../components';
 
 export const HomeScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -173,19 +184,37 @@ export const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {theme.isPikachu && <PikachuStickerBackground />}
+      {theme.isPikachu && <PikachuPattern subtle={true} opacity={0.16} />}
+      {theme.isEevee && <EeveePattern subtle={true} opacity={0.16} />}
+      {theme.isArceus && <ArceusBackground subtle={true} opacity={0.16} />}
       {/* Search & Filter Header */}
       <View style={[styles.headerActions, { borderBottomColor: theme.colors.border }]}>
-        <View style={[styles.searchBarContainer, { backgroundColor: theme.colors.card }]}>
+        <View style={[styles.searchBarContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, borderWidth: 1 }]}>
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={handleSearchSubmit}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="search" size={18} color={theme.colors.textSecondary} style={styles.searchIcon} />
+            {theme.isPikachu ? (
+              <PikachuFace size={22} style={{ marginRight: 6 }} />
+            ) : theme.isEevee ? (
+              <EeveeFace size={22} style={{ marginRight: 6 }} showCollar={false} />
+            ) : theme.isArceus ? (
+              <ArceusPlate type="normal" size={20} style={{ marginRight: 6 }} />
+            ) : (
+              <Ionicons name="search" size={18} color={theme.colors.textSecondary} style={styles.searchIcon} />
+            )}
           </TouchableOpacity>
           <TextInput
-            placeholder={theme.isPikachu ? '⚡ Search Pokémon in Pikachu Mode...' : 'Search by name or number...'}
+            placeholder={
+              theme.isPikachu
+                ? '⚡ Search Pokémon in Pikachu Mode...'
+                : theme.isEevee
+                ? '🐾 Search Pokémon in Eevee Mode...'
+                : theme.isArceus
+                ? '📜 Search ancient Hisui Pokédex...'
+                : 'Search by name or number...'
+            }
             placeholderTextColor={theme.colors.textSecondary}
             style={[styles.searchInput, { color: theme.colors.text }]}
             value={searchQuery}
@@ -243,11 +272,72 @@ export const HomeScreen = ({ navigation }) => {
         windowSize={5}
         removeClippedSubviews={true}
         updateCellsBatchingPeriod={50}
-        ListHeaderComponent={theme.isPikachu ? () => (
-          <View style={{ width: '100%', paddingHorizontal: 4, paddingBottom: 6 }}>
-            <PikachuFaceWidget />
-          </View>
-        ) : null}
+        ListHeaderComponent={
+          theme.isPikachu ? () => (
+            <View style={{ width: '100%', paddingHorizontal: 4, paddingBottom: 6 }}>
+              <PikachuFaceWidget />
+            </View>
+          ) : theme.isEevee ? () => (
+            <View style={{ width: '100%', paddingHorizontal: 4, paddingBottom: 6 }}>
+              <EeveeThemeWidget />
+            </View>
+          ) : theme.isArceus ? () => (
+            <View style={{ width: '100%', paddingHorizontal: 4, paddingBottom: 6 }}>
+              {/* Ancient Hisui Field Journal Banner */}
+              <View style={[styles.arceusBannerCard, { backgroundColor: '#FFFDF9', borderColor: '#E5D9C2' }]}>
+                <View style={styles.arceusBannerTop}>
+                  <View style={styles.arceusSilhouetteBadge}>
+                    <Ionicons name="sunny" size={18} color="#C9A35B" />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <Text style={styles.arceusBannerTitle}>HISUI SURVEY CORPS</Text>
+                    <Text style={styles.arceusBannerSub}>Tap any Sacred Plate to filter Pokémon by type</Text>
+                  </View>
+                  {filters.types.length > 0 && (
+                    <TouchableOpacity
+                      onPress={() => setFilters(f => ({ ...f, types: [] }))}
+                      style={styles.clearPlatesBtn}
+                    >
+                      <Text style={styles.clearPlatesText}>Reset</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Horizontal Interactive 18 Plates Filter Scroll */}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.platesFilterRow}
+                >
+                  {ARCEUS_PLATES.map(plate => {
+                    const isSelected = filters.types.includes(plate.type);
+                    return (
+                      <ArceusPlate
+                        key={`home-plate-${plate.id}`}
+                        type={plate.type}
+                        size={28}
+                        selected={isSelected}
+                        showLabel={true}
+                        onPress={() => {
+                          setFilters(prev => {
+                            const exists = prev.types.includes(plate.type);
+                            return {
+                              ...prev,
+                              types: exists
+                                ? prev.types.filter(t => t !== plate.type)
+                                : [plate.type],
+                            };
+                          });
+                          setDisplayedItems(20);
+                        }}
+                      />
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            </View>
+          ) : null
+        }
         ListFooterComponent={() => {
           if (displayedItems < filteredPokemonList.length) {
             return (
@@ -260,10 +350,44 @@ export const HomeScreen = ({ navigation }) => {
         }}
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Ionicons name="alert-circle-outline" size={48} color={theme.colors.textSecondary} />
-            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
-              No Pokémon found matching criteria.
-            </Text>
+            {theme.isPikachu ? (
+              <View style={{ alignItems: 'center' }}>
+                <PikachuFace size={72} expression="surprised" blushing={true} />
+                <Text style={[styles.emptyText, { color: theme.colors.text, marginTop: 14, fontWeight: '800' }]}>
+                  Pika-pi? No Pokémon found!
+                </Text>
+                <Text style={{ color: theme.colors.textSecondary, fontSize: 13, marginTop: 4 }}>
+                  Try clearing your search or filter tags.
+                </Text>
+              </View>
+            ) : theme.isEevee ? (
+              <View style={{ alignItems: 'center' }}>
+                <EeveeFace size={72} expression="surprised" blushing={true} />
+                <Text style={[styles.emptyText, { color: theme.colors.text, marginTop: 14, fontWeight: '800' }]}>
+                  Eev-vee? No Pokémon found!
+                </Text>
+                <Text style={{ color: theme.colors.textSecondary, fontSize: 13, marginTop: 4 }}>
+                  Try clearing your search or filter tags.
+                </Text>
+              </View>
+            ) : theme.isArceus ? (
+              <View style={{ alignItems: 'center' }}>
+                <Ionicons name="sunny" size={64} color="#C9A35B" />
+                <Text style={[styles.emptyText, { color: theme.colors.text, marginTop: 14, fontWeight: '800' }]}>
+                  No Pokémon found in Hisui Records!
+                </Text>
+                <Text style={{ color: theme.colors.textSecondary, fontSize: 13, marginTop: 4 }}>
+                  Try resetting your Sacred Plate filters.
+                </Text>
+              </View>
+            ) : (
+              <View style={{ alignItems: 'center' }}>
+                <Ionicons name="alert-circle-outline" size={48} color={theme.colors.textSecondary} />
+                <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
+                  No Pokémon found matching criteria.
+                </Text>
+              </View>
+            )}
           </View>
         )}
         refreshControl={
@@ -283,7 +407,13 @@ export const HomeScreen = ({ navigation }) => {
         activeOpacity={0.8}
         onPress={() => navigation.navigate('Compare')}
       >
-        <Ionicons name="aperture" size={28} color="#ffffff" />
+        {theme.isPikachu ? (
+          <PikachuFace size={34} expression="wink" />
+        ) : theme.isEevee ? (
+          <EeveeFace size={34} expression="cheerful" showCollar={false} />
+        ) : (
+          <Ionicons name="aperture" size={28} color="#ffffff" />
+        )}
       </TouchableOpacity>
 
       {/* Filter Modal */}
@@ -409,5 +539,57 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
+  },
+  arceusBannerCard: {
+    borderWidth: 1.2,
+    borderRadius: 14,
+    padding: 10,
+    elevation: 2,
+    shadowColor: '#292A2D',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  arceusBannerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  arceusSilhouetteBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F8F2E7',
+    borderWidth: 1,
+    borderColor: '#C9A35B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  arceusBannerTitle: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#262626',
+    letterSpacing: 0.8,
+  },
+  arceusBannerSub: {
+    fontSize: 9.5,
+    color: '#5B6B7F',
+    marginTop: 1,
+  },
+  clearPlatesBtn: {
+    backgroundColor: '#C9A35B',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  clearPlatesText: {
+    color: '#FFFFFF',
+    fontSize: 9.5,
+    fontWeight: '800',
+  },
+  platesFilterRow: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingVertical: 2,
   },
 });

@@ -14,6 +14,8 @@ import { championsPokemon } from '../data/championsPokemon';
 import { newlyAddedPokemon } from '../data/newlyAdded';
 import { TYPE_COLORS } from './FilterModal';
 import { PikachuFace } from './PikachuFace';
+import { EeveeFace } from './EeveeFace';
+import { ArceusPlate } from './ArceusPlate';
 
 // Helper to determine the official Pokédex species color category for Gen 1,
 // falling back to closely aligned type colors for Gen 2-9.
@@ -293,11 +295,18 @@ export const PokemonCard = React.memo(({ pokemon, onPress }) => {
 
   // Dynamic card background based on Pokedex color and theme
   const getCardBgColor = () => {
+    if (theme.isObsidian) return '#151D27';
     return getSolidCardBg(dexColor, theme.dark);
   };
 
   const getImageBgColor = () => {
+    if (theme.isObsidian) return '#1C2632';
     return getSolidCircleBg(dexColor, theme.dark);
+  };
+
+  const getCardBorderColor = () => {
+    if (theme.isObsidian) return '#293441';
+    return dexColor;
   };
 
   const artworkUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`;
@@ -310,7 +319,7 @@ export const PokemonCard = React.memo(({ pokemon, onPress }) => {
         styles.card,
         {
           backgroundColor: getCardBgColor(),
-          borderColor: dexColor,
+          borderColor: getCardBorderColor(),
           borderWidth: 1.5,
         }
       ]}
@@ -330,26 +339,88 @@ export const PokemonCard = React.memo(({ pokemon, onPress }) => {
         </View>
 
         {theme.isPikachu && (
-          <View style={styles.pikaCardSignature}>
-            <PikachuFace size={16} />
-            <Ionicons name="flash" size={9} color="#FF3B30" style={{ marginLeft: 2 }} />
+          <View style={styles.cardCornerPika} pointerEvents="none">
+            <PikachuFace size={24} silhouette={true} silhouetteColor="rgba(225, 168, 0, 0.16)" />
+          </View>
+        )}
+        {theme.isEevee && (
+          <View style={styles.cardCornerPika} pointerEvents="none">
+            <EeveeFace size={24} silhouette={true} silhouetteColor="rgba(166, 124, 82, 0.18)" showCollar={false} />
+          </View>
+        )}
+        {theme.isArceus && (
+          <View style={styles.cardCornerPika} pointerEvents="none">
+            <Ionicons name="sunny-outline" size={18} color="rgba(201, 163, 91, 0.35)" />
           </View>
         )}
 
         <TouchableOpacity
           style={styles.heartButton}
           onPress={() => toggleFavorite(pokemon.id)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons
-            name={favorited ? 'heart' : 'heart-outline'}
-            size={18}
-            color={favorited ? '#FF5252' : theme.colors.textSecondary}
-          />
+          {theme.isPikachu ? (
+            <View style={styles.pikaFavWrap}>
+              <PikachuFace
+                size={18}
+                expression={favorited ? 'wink' : 'happy'}
+                blushing={favorited}
+              />
+              {favorited && (
+                <Ionicons
+                  name="heart"
+                  size={9}
+                  color="#FF3B30"
+                  style={styles.pikaHeartDot}
+                />
+              )}
+            </View>
+          ) : theme.isEevee ? (
+            <View style={styles.pikaFavWrap}>
+              <EeveeFace
+                size={18}
+                expression={favorited ? 'wink' : 'cheerful'}
+                blushing={favorited}
+                showCollar={false}
+              />
+              {favorited && (
+                <Ionicons
+                  name="heart"
+                  size={9}
+                  color="#F7A8C3"
+                  style={styles.pikaHeartDot}
+                />
+              )}
+            </View>
+          ) : theme.isArceus ? (
+            <View style={styles.pikaFavWrap}>
+              <Ionicons
+                name={favorited ? 'bookmark' : 'bookmark-outline'}
+                size={18}
+                color={favorited ? '#C9A35B' : theme.colors.textSecondary}
+              />
+            </View>
+          ) : (
+            <Ionicons
+              name={favorited ? 'heart' : 'heart-outline'}
+              size={18}
+              color={favorited ? (theme.isObsidian ? '#E34B52' : '#FF5252') : theme.colors.textSecondary}
+            />
+          )}
         </TouchableOpacity>
       </View>
 
       {/* Image Container */}
-      <View style={[styles.imageContainer, { backgroundColor: getImageBgColor() }]}>
+      <View
+        style={[
+          styles.imageContainer,
+          {
+            backgroundColor: getImageBgColor(),
+            borderColor: theme.isObsidian ? `${typeColor}30` : 'transparent',
+            borderWidth: theme.isObsidian ? 1 : 0,
+          },
+        ]}
+      >
         <Image
           source={{ uri: artworkUrl }}
           style={styles.pokemonImage}
@@ -360,13 +431,29 @@ export const PokemonCard = React.memo(({ pokemon, onPress }) => {
       {/* Badges Container */}
       <View style={styles.badgesWrapper}>
         {isChamp && (
-          <View style={[styles.badge, styles.champBadge]}>
-            <Text style={styles.badgeText}>🏆 Champions</Text>
+          <View
+            style={[
+              styles.badge,
+              styles.champBadge,
+              theme.isObsidian && { backgroundColor: 'rgba(214, 180, 119, 0.16)', borderColor: '#D6B477', borderWidth: 1 },
+            ]}
+          >
+            <Text style={[styles.badgeText, theme.isObsidian && { color: '#D6B477', fontWeight: '800' }]}>
+              🏆 Champions
+            </Text>
           </View>
         )}
         {isNew && (
-          <View style={[styles.badge, styles.newBadge]}>
-            <Text style={styles.badgeText}>✨ New</Text>
+          <View
+            style={[
+              styles.badge,
+              styles.newBadge,
+              theme.isObsidian && { backgroundColor: 'rgba(227, 75, 82, 0.16)', borderColor: '#E34B52', borderWidth: 1 },
+            ]}
+          >
+            <Text style={[styles.badgeText, theme.isObsidian && { color: '#E34B52', fontWeight: '800' }]}>
+              ✨ New
+            </Text>
           </View>
         )}
       </View>
@@ -376,16 +463,27 @@ export const PokemonCard = React.memo(({ pokemon, onPress }) => {
         {capitalizedName}
       </Text>
 
-      {/* Type Badges */}
+      {/* Type Badges / Arceus Plates */}
       <View style={styles.typesRow}>
-        {pokemon.types.map((t, idx) => {
-          const tc = TYPE_COLORS[t.toLowerCase()] || '#A8A878';
-          return (
-            <View key={`${t}-${idx}`} style={[styles.typeBadge, { backgroundColor: tc }]}>
-              <Text style={styles.typeText}>{t.toUpperCase()}</Text>
-            </View>
-          );
-        })}
+        {theme.isArceus ? (
+          pokemon.types.map((t, idx) => (
+            <ArceusPlate
+              key={`plate-${t}-${idx}`}
+              type={t.toLowerCase()}
+              size="small"
+              showLabel={true}
+            />
+          ))
+        ) : (
+          pokemon.types.map((t, idx) => {
+            const tc = TYPE_COLORS[t.toLowerCase()] || '#A8A878';
+            return (
+              <View key={`${t}-${idx}`} style={[styles.typeBadge, { backgroundColor: tc }]}>
+                <Text style={styles.typeText}>{t.toUpperCase()}</Text>
+              </View>
+            );
+          })
+        )}
       </View>
 
     </TouchableOpacity>
@@ -409,6 +507,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
     alignItems: 'center',
+  },
+  cardCornerPika: {
+    position: 'absolute',
+    top: -4,
+    right: 28,
+    opacity: 0.85,
+  },
+  pikaFavWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+    padding: 2,
+  },
+  pikaHeartDot: {
+    position: 'absolute',
+    top: -4,
+    right: -5,
   },
   pikaCardSignature: {
     flexDirection: 'row',

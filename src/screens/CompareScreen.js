@@ -18,7 +18,16 @@ import { TYPE_COLORS } from '../components/FilterModal';
 import { Ionicons } from '@expo/vector-icons';
 import { PokeBallLoading } from '../components/PokeBallLoading';
 import { matchesPokemonSearch } from '../utils/searchUtils';
-import { PikachuStickerBackground } from '../components/PikachuStickerBackground';
+import {
+  PikachuPattern,
+  PikachuFace,
+  PikachuBadge,
+  EeveePattern,
+  EeveeFace,
+  EeveeBadge,
+  ArceusBackground,
+  ArceusPlate,
+} from '../components';
 
 export const CompareScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -154,7 +163,9 @@ export const CompareScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} keyboardShouldPersistTaps="handled">
-      {theme.isPikachu && <PikachuStickerBackground />}
+      {theme.isPikachu && <PikachuPattern subtle={true} opacity={0.16} />}
+      {theme.isEevee && <EeveePattern subtle={true} opacity={0.16} />}
+      {theme.isArceus && <ArceusBackground subtle={true} opacity={0.16} />}
       <View style={styles.content}>
         {/* Selection Area */}
         <View style={styles.selectionSection}>
@@ -195,7 +206,24 @@ export const CompareScreen = ({ navigation }) => {
 
           {/* VS Divider */}
           <View style={styles.vsContainer}>
-            <Text style={[styles.vsText, { color: theme.colors.primary }]}>VS</Text>
+            {theme.isPikachu ? (
+              <View style={{ alignItems: 'center' }}>
+                <PikachuFace size={26} expression="spark" />
+                <Text style={[styles.vsText, { color: theme.colors.primary, fontSize: 11, fontWeight: '900', marginTop: 2 }]}>VS</Text>
+              </View>
+            ) : theme.isEevee ? (
+              <View style={{ alignItems: 'center' }}>
+                <EeveeFace size={26} expression="cheerful" showCollar={false} />
+                <Text style={[styles.vsText, { color: theme.colors.primary, fontSize: 11, fontWeight: '900', marginTop: 2 }]}>VS</Text>
+              </View>
+            ) : theme.isArceus ? (
+              <View style={{ alignItems: 'center' }}>
+                <Ionicons name="sunny" size={24} color="#C9A35B" />
+                <Text style={[styles.vsText, { color: '#C9A35B', fontSize: 11, fontWeight: '900', marginTop: 2 }]}>VS</Text>
+              </View>
+            ) : (
+              <Text style={[styles.vsText, { color: theme.colors.primary }]}>VS</Text>
+            )}
           </View>
 
           {/* Pokémon 2 Selection */}
@@ -250,11 +278,22 @@ export const CompareScreen = ({ navigation }) => {
                   {details1.name.charAt(0).toUpperCase() + details1.name.slice(1)}
                 </Text>
                 <View style={styles.typesRow}>
-                  {details1.types.map((t, idx) => (
-                    <View key={`${t}-${idx}`} style={[styles.typeBadge, { backgroundColor: TYPE_COLORS[t.toLowerCase()] }]}>
-                      <Text style={styles.typeText}>{t.toUpperCase().slice(0, 4)}</Text>
-                    </View>
-                  ))}
+                  {theme.isArceus ? (
+                    details1.types.map((t, idx) => (
+                      <ArceusPlate
+                        key={`comp1-plate-${t}-${idx}`}
+                        type={t.toLowerCase()}
+                        size={26}
+                        showLabel={true}
+                      />
+                    ))
+                  ) : (
+                    details1.types.map((t, idx) => (
+                      <View key={`${t}-${idx}`} style={[styles.typeBadge, { backgroundColor: TYPE_COLORS[t.toLowerCase()] }]}>
+                        <Text style={styles.typeText}>{t.toUpperCase().slice(0, 4)}</Text>
+                      </View>
+                    ))
+                  )}
                 </View>
               </View>
 
@@ -270,11 +309,22 @@ export const CompareScreen = ({ navigation }) => {
                   {details2.name.charAt(0).toUpperCase() + details2.name.slice(1)}
                 </Text>
                 <View style={styles.typesRow}>
-                  {details2.types.map((t, idx) => (
-                    <View key={`${t}-${idx}`} style={[styles.typeBadge, { backgroundColor: TYPE_COLORS[t.toLowerCase()] }]}>
-                      <Text style={styles.typeText}>{t.toUpperCase().slice(0, 4)}</Text>
-                    </View>
-                  ))}
+                  {theme.isArceus ? (
+                    details2.types.map((t, idx) => (
+                      <ArceusPlate
+                        key={`comp2-plate-${t}-${idx}`}
+                        type={t.toLowerCase()}
+                        size={26}
+                        showLabel={true}
+                      />
+                    ))
+                  ) : (
+                    details2.types.map((t, idx) => (
+                      <View key={`${t}-${idx}`} style={[styles.typeBadge, { backgroundColor: TYPE_COLORS[t.toLowerCase()] }]}>
+                        <Text style={styles.typeText}>{t.toUpperCase().slice(0, 4)}</Text>
+                      </View>
+                    ))
+                  )}
                 </View>
               </View>
             </View>
@@ -327,10 +377,34 @@ export const CompareScreen = ({ navigation }) => {
         ) : (
           !loading && (
             <View style={styles.placeholderContainer}>
-              <Ionicons name="git-compare" size={64} color={theme.colors.textSecondary} style={{ opacity: 0.5 }} />
-              <Text style={[styles.placeholderTitle, { color: theme.colors.text }]}>Select two Pokémon</Text>
+              {theme.isPikachu ? (
+                <View style={{ alignItems: 'center', marginBottom: 12 }}>
+                  <PikachuFace size={72} expression="happy" blushing={true} />
+                </View>
+              ) : theme.isEevee ? (
+                <View style={{ alignItems: 'center', marginBottom: 12 }}>
+                  <EeveeFace size={72} expression="cheerful" blushing={true} />
+                </View>
+              ) : theme.isArceus ? (
+                <View style={{ alignItems: 'center', marginBottom: 12 }}>
+                  <Ionicons name="sunny" size={64} color="#C9A35B" />
+                </View>
+              ) : (
+                <Ionicons name="git-compare" size={64} color={theme.colors.textSecondary} style={{ opacity: 0.5 }} />
+              )}
+              <Text style={[styles.placeholderTitle, { color: theme.colors.text }]}>
+                {theme.isPikachu
+                  ? 'Pick Two Pokémon to Compare! ⚡'
+                  : theme.isEevee
+                  ? 'Pick Two Pokémon to Compare! 🐾'
+                  : theme.isArceus
+                  ? 'Consult the Hisui Survey Records 📜'
+                  : 'Select two Pokémon'}
+              </Text>
               <Text style={[styles.placeholderSub, { color: theme.colors.textSecondary }]}>
-                Search and select two Pokémon in the inputs above to compare their stats and attributes side-by-side.
+                {theme.isArceus
+                  ? 'Select two Pokémon above to compare their elemental Plates, typings, and ancient base statistics.'
+                  : 'Search and select two Pokémon in the inputs above to compare their stats, typings, and abilities side-by-side.'}
               </Text>
             </View>
           )

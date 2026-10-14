@@ -1,28 +1,37 @@
-import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
 /**
  * Scalable, recognizable Pikachu Face Component
  * Built purely with React Native primitives for crisp, offline, vector rendering.
  * Features:
  * - Iconic black-tipped ears tilted at authentic angles
- * - Bright Pikachu yellow face (#FFD700)
- * - Round black anime eyes with white specular catchlights
- * - Bright rosy electric red cheek pouches (#FF3B30)
- * - Tiny nose & cute curved smile
+ * - Bright Pikachu yellow face (#FFD700) or silhouette mode
+ * - Round black anime eyes with specular catchlights and 6 expressive variants:
+ *   'happy' | 'wink' | 'surprised' | 'cheeky' | 'sleepy' | 'spark'
+ * - Rosy electric red cheek pouches (#FF3B30)
+ * - Tiny nose & cute curved smile (:3 or open mouth)
+ * - Silhouette mode for subtle background pattern repeats
  */
 export const PikachuFace = ({
   size = 56,
+  expression = 'happy',
   blushing = false,
   cheekPulse = false,
   interactive = false,
+  silhouette = false,
+  silhouetteColor = 'rgba(217, 158, 0, 0.16)',
+  showEars = true,
   onPress,
   style,
   accessibilityLabel = 'Pikachu Face',
 }) => {
+  const [currentExpr, setCurrentExpr] = useState(expression);
+  const [isBlushing, setIsBlushing] = useState(blushing);
+
   const scale = size / 56;
 
-  // Calculated dimensions
+  // Calculated vector dimensions
   const earW = 12 * scale;
   const earH = 30 * scale;
   const earTipH = 10 * scale;
@@ -30,72 +39,350 @@ export const PikachuFace = ({
   const headH = 40 * scale;
   const headR = 20 * scale;
   const cheekSize = 13 * scale;
-  const eyeSize = 9 * scale;
-  const pupilSize = 3.5 * scale;
+  const eyeSize = 9.5 * scale;
+  const pupilSize = 3.8 * scale;
+
+  const handlePress = () => {
+    if (interactive) {
+      setIsBlushing(true);
+      const expressions = ['happy', 'wink', 'surprised', 'cheeky', 'sleepy', 'spark'];
+      const next = expressions[(expressions.indexOf(currentExpr) + 1) % expressions.length];
+      setCurrentExpr(next);
+      setTimeout(() => setIsBlushing(false), 900);
+    }
+    if (onPress) onPress();
+  };
+
+  const activeExpr = interactive ? currentExpr : expression;
+  const activeBlush = blushing || isBlushing;
+
+  // If silhouette mode is requested (for subtle seamless background patterns)
+  if (silhouette) {
+    return (
+      <View
+        style={[
+          styles.root,
+          { width: headW + 20 * scale, height: (showEars ? earH + headH - 6 * scale : headH) },
+          style,
+        ]}
+        pointerEvents="none"
+        accessibilityElementsHidden={true}
+        importantForAccessibility="no-hide-descendants"
+      >
+        {showEars && (
+          <View style={[styles.earsRow, { height: earH }]}>
+            <View
+              style={[
+                styles.silhouetteEar,
+                styles.leftEar,
+                {
+                  width: earW,
+                  height: earH,
+                  borderTopLeftRadius: 8 * scale,
+                  borderTopRightRadius: 8 * scale,
+                  backgroundColor: silhouetteColor,
+                },
+              ]}
+            />
+            <View style={{ width: 18 * scale }} />
+            <View
+              style={[
+                styles.silhouetteEar,
+                styles.rightEar,
+                {
+                  width: earW,
+                  height: earH,
+                  borderTopLeftRadius: 8 * scale,
+                  borderTopRightRadius: 8 * scale,
+                  backgroundColor: silhouetteColor,
+                },
+              ]}
+            />
+          </View>
+        )}
+        <View
+          style={[
+            styles.silhouetteHead,
+            {
+              width: headW,
+              height: headH,
+              borderRadius: headR,
+              backgroundColor: silhouetteColor,
+              marginTop: showEars ? -6 * scale : 0,
+            },
+          ]}
+        />
+      </View>
+    );
+  }
+
+  const renderLeftEye = () => {
+    if (activeExpr === 'wink') {
+      // Winking curved arc
+      return (
+        <View
+          style={[
+            styles.winkEye,
+            {
+              width: eyeSize,
+              height: 4 * scale,
+              borderTopWidth: 2.2 * scale,
+              borderTopLeftRadius: 4 * scale,
+              borderTopRightRadius: 4 * scale,
+            },
+          ]}
+        />
+      );
+    }
+    if (activeExpr === 'cheeky') {
+      return (
+        <Text style={[styles.squintText, { fontSize: 10 * scale }]}>^</Text>
+      );
+    }
+    if (activeExpr === 'sleepy') {
+      return (
+        <View
+          style={[
+            styles.sleepyEye,
+            {
+              width: eyeSize,
+              height: 4 * scale,
+              borderBottomWidth: 2.2 * scale,
+              borderBottomLeftRadius: 4 * scale,
+              borderBottomRightRadius: 4 * scale,
+            },
+          ]}
+        />
+      );
+    }
+    // Normal round anime eye
+    return (
+      <View
+        style={[
+          styles.eye,
+          {
+            width: eyeSize,
+            height: eyeSize,
+            borderRadius: eyeSize / 2,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.pupil,
+            {
+              width: pupilSize,
+              height: pupilSize,
+              borderRadius: pupilSize / 2,
+              top: 1 * scale,
+              left: 1.5 * scale,
+            },
+          ]}
+        />
+      </View>
+    );
+  };
+
+  const renderRightEye = () => {
+    if (activeExpr === 'cheeky') {
+      return (
+        <Text style={[styles.squintText, { fontSize: 10 * scale }]}>^</Text>
+      );
+    }
+    if (activeExpr === 'sleepy') {
+      return (
+        <View
+          style={[
+            styles.sleepyEye,
+            {
+              width: eyeSize,
+              height: 4 * scale,
+              borderBottomWidth: 2.2 * scale,
+              borderBottomLeftRadius: 4 * scale,
+              borderBottomRightRadius: 4 * scale,
+            },
+          ]}
+        />
+      );
+    }
+    // Normal round eye (even during wink)
+    return (
+      <View
+        style={[
+          styles.eye,
+          {
+            width: eyeSize,
+            height: eyeSize,
+            borderRadius: eyeSize / 2,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.pupil,
+            {
+              width: pupilSize,
+              height: pupilSize,
+              borderRadius: pupilSize / 2,
+              top: 1 * scale,
+              left: 1.5 * scale,
+            },
+          ]}
+        />
+      </View>
+    );
+  };
+
+  const renderMouth = () => {
+    if (activeExpr === 'surprised') {
+      return (
+        <View
+          style={[
+            styles.surprisedMouth,
+            {
+              width: 5.5 * scale,
+              height: 7.5 * scale,
+              borderRadius: 3 * scale,
+              borderWidth: 1.2 * scale,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.tongueSpot,
+              { width: 3.5 * scale, height: 2.5 * scale, borderRadius: 1.5 * scale },
+            ]}
+          />
+        </View>
+      );
+    }
+
+    if (activeExpr === 'cheeky') {
+      return (
+        <View style={styles.cheekyMouthWrap}>
+          <View
+            style={[
+              styles.smileHalf,
+              {
+                width: 7 * scale,
+                height: 3 * scale,
+                borderBottomLeftRadius: 3.5 * scale,
+                borderBottomRightRadius: 3.5 * scale,
+                borderWidth: Math.max(1, 1.2 * scale),
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.tongueOut,
+              {
+                width: 4.5 * scale,
+                height: 4.5 * scale,
+                borderBottomLeftRadius: 2.5 * scale,
+                borderBottomRightRadius: 2.5 * scale,
+              },
+            ]}
+          />
+        </View>
+      );
+    }
+
+    // Default cute :3 cat smile
+    return (
+      <View style={styles.smileWrap}>
+        <View
+          style={[
+            styles.smileHalf,
+            {
+              width: 4.5 * scale,
+              height: 3.5 * scale,
+              borderBottomLeftRadius: 3 * scale,
+              borderBottomRightRadius: 3 * scale,
+              borderWidth: Math.max(1, 1.2 * scale),
+            },
+          ]}
+        />
+        <View
+          style={[
+            styles.smileHalf,
+            {
+              width: 4.5 * scale,
+              height: 3.5 * scale,
+              borderBottomLeftRadius: 3 * scale,
+              borderBottomRightRadius: 3 * scale,
+              borderWidth: Math.max(1, 1.2 * scale),
+            },
+          ]}
+        />
+      </View>
+    );
+  };
 
   const content = (
     <View
       style={[
         styles.root,
-        { width: headW + 20 * scale, height: headH + earH - 6 * scale },
+        { width: headW + 20 * scale, height: (showEars ? headH + earH - 6 * scale : headH) },
         style,
       ]}
       accessibilityRole="image"
       accessibilityLabel={accessibilityLabel}
     >
-      {/* ─── EARS ROW ──────────────────────────────────────────────────────── */}
-      <View style={[styles.earsRow, { height: earH }]}>
-        {/* Left Ear */}
-        <View
-          style={[
-            styles.ear,
-            styles.leftEar,
-            {
-              width: earW,
-              height: earH,
-              borderTopLeftRadius: 8 * scale,
-              borderTopRightRadius: 8 * scale,
-              borderWidth: Math.max(1, 1.2 * scale),
-            },
-          ]}
-        >
+      {/* ─── EARS ROW WITH BLACK TIPS ─────────────────────────────────────────── */}
+      {showEars && (
+        <View style={[styles.earsRow, { height: earH }]}>
+          {/* Left Ear (Tilted Left) */}
           <View
             style={[
-              styles.earTip,
-              styles.leftEarTip,
-              { height: earTipH },
+              styles.ear,
+              styles.leftEar,
+              {
+                width: earW,
+                height: earH,
+                borderTopLeftRadius: 8 * scale,
+                borderTopRightRadius: 8 * scale,
+                borderWidth: Math.max(1, 1.2 * scale),
+              },
             ]}
-          />
-        </View>
+          >
+            <View
+              style={[
+                styles.earTip,
+                styles.leftEarTip,
+                { height: earTipH },
+              ]}
+            />
+          </View>
 
-        {/* Ear Gap */}
-        <View style={{ width: 18 * scale }} />
+          {/* Ear Gap */}
+          <View style={{ width: 18 * scale }} />
 
-        {/* Right Ear */}
-        <View
-          style={[
-            styles.ear,
-            styles.rightEar,
-            {
-              width: earW,
-              height: earH,
-              borderTopLeftRadius: 8 * scale,
-              borderTopRightRadius: 8 * scale,
-              borderWidth: Math.max(1, 1.2 * scale),
-            },
-          ]}
-        >
+          {/* Right Ear (Tilted Right) */}
           <View
             style={[
-              styles.earTip,
-              styles.rightEarTip,
-              { height: earTipH },
+              styles.ear,
+              styles.rightEar,
+              {
+                width: earW,
+                height: earH,
+                borderTopLeftRadius: 8 * scale,
+                borderTopRightRadius: 8 * scale,
+                borderWidth: Math.max(1, 1.2 * scale),
+              },
             ]}
-          />
+          >
+            <View
+              style={[
+                styles.earTip,
+                styles.rightEarTip,
+                { height: earTipH },
+              ]}
+            />
+          </View>
         </View>
-      </View>
+      )}
 
-      {/* ─── HEAD & FACE ───────────────────────────────────────────────────── */}
+      {/* ─── HEAD & FACIAL FEATURES ────────────────────────────────────────── */}
       <View
         style={[
           styles.head,
@@ -103,14 +390,14 @@ export const PikachuFace = ({
             width: headW,
             height: headH,
             borderRadius: headR,
-            marginTop: -6 * scale,
+            marginTop: showEars ? -6 * scale : 0,
             borderWidth: Math.max(1, 1.2 * scale),
           },
         ]}
       >
         {/* Cheeks & Eyes Row */}
         <View style={styles.featuresRow}>
-          {/* Left Cheek */}
+          {/* Left Rosy Cheek Pouch */}
           <View
             style={[
               styles.cheek,
@@ -118,40 +405,19 @@ export const PikachuFace = ({
                 width: cheekSize,
                 height: cheekSize,
                 borderRadius: cheekSize / 2,
-                transform: [{ scale: blushing ? 1.25 : 1 }],
+                transform: [{ scale: activeBlush ? 1.25 : 1 }],
               },
-              blushing && styles.cheekBlushing,
+              activeBlush && styles.cheekBlushing,
             ]}
           />
 
           {/* Left Eye */}
-          <View
-            style={[
-              styles.eye,
-              {
-                width: eyeSize,
-                height: eyeSize,
-                borderRadius: eyeSize / 2,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.pupil,
-                {
-                  width: pupilSize,
-                  height: pupilSize,
-                  borderRadius: pupilSize / 2,
-                  top: 1 * scale,
-                  left: 1.5 * scale,
-                },
-              ]}
-            />
+          <View style={styles.eyeContainer}>
+            {renderLeftEye()}
           </View>
 
           {/* Center Nose & Smile */}
           <View style={styles.mouthArea}>
-            {/* Tiny nose */}
             <View
               style={[
                 styles.nose,
@@ -163,61 +429,15 @@ export const PikachuFace = ({
                 },
               ]}
             />
-            {/* Smile W-curve */}
-            <View style={styles.smileWrap}>
-              <View
-                style={[
-                  styles.smileHalf,
-                  {
-                    width: 4.5 * scale,
-                    height: 3.5 * scale,
-                    borderBottomLeftRadius: 3 * scale,
-                    borderBottomRightRadius: 3 * scale,
-                    borderWidth: Math.max(1, 1.2 * scale),
-                  },
-                ]}
-              />
-              <View
-                style={[
-                  styles.smileHalf,
-                  {
-                    width: 4.5 * scale,
-                    height: 3.5 * scale,
-                    borderBottomLeftRadius: 3 * scale,
-                    borderBottomRightRadius: 3 * scale,
-                    borderWidth: Math.max(1, 1.2 * scale),
-                  },
-                ]}
-              />
-            </View>
+            {renderMouth()}
           </View>
 
           {/* Right Eye */}
-          <View
-            style={[
-              styles.eye,
-              {
-                width: eyeSize,
-                height: eyeSize,
-                borderRadius: eyeSize / 2,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.pupil,
-                {
-                  width: pupilSize,
-                  height: pupilSize,
-                  borderRadius: pupilSize / 2,
-                  top: 1 * scale,
-                  left: 1.5 * scale,
-                },
-              ]}
-            />
+          <View style={styles.eyeContainer}>
+            {renderRightEye()}
           </View>
 
-          {/* Right Cheek */}
+          {/* Right Rosy Cheek Pouch */}
           <View
             style={[
               styles.cheek,
@@ -225,9 +445,9 @@ export const PikachuFace = ({
                 width: cheekSize,
                 height: cheekSize,
                 borderRadius: cheekSize / 2,
-                transform: [{ scale: blushing ? 1.25 : 1 }],
+                transform: [{ scale: activeBlush ? 1.25 : 1 }],
               },
-              blushing && styles.cheekBlushing,
+              activeBlush && styles.cheekBlushing,
             ]}
           />
         </View>
@@ -237,7 +457,7 @@ export const PikachuFace = ({
 
   if (interactive) {
     return (
-      <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
+      <TouchableOpacity activeOpacity={0.8} onPress={handlePress}>
         {content}
       </TouchableOpacity>
     );
@@ -261,6 +481,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFD700',
     borderColor: '#3D2F07',
     overflow: 'hidden',
+  },
+  silhouetteEar: {
+    overflow: 'hidden',
+  },
+  silhouetteHead: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   leftEar: {
     transform: [{ rotate: '-26deg' }],
@@ -313,9 +540,24 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
+  eyeContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   eye: {
     backgroundColor: '#1C1917',
     position: 'relative',
+  },
+  winkEye: {
+    borderTopColor: '#1C1917',
+  },
+  sleepyEye: {
+    borderBottomColor: '#1C1917',
+  },
+  squintText: {
+    color: '#1C1917',
+    fontWeight: '900',
+    lineHeight: 12,
   },
   pupil: {
     position: 'absolute',
@@ -336,5 +578,26 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderColor: '#272007',
     borderTopWidth: 0,
+  },
+  surprisedMouth: {
+    backgroundColor: '#3D0A24',
+    borderColor: '#272007',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  tongueSpot: {
+    backgroundColor: '#FF8A80',
+    marginBottom: 0.5,
+  },
+  cheekyMouthWrap: {
+    alignItems: 'center',
+    position: 'relative',
+  },
+  tongueOut: {
+    backgroundColor: '#FF8A80',
+    borderWidth: 0.8,
+    borderColor: '#272007',
+    marginTop: -1,
   },
 });

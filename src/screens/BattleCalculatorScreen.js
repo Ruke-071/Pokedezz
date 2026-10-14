@@ -35,7 +35,16 @@ import {
   calculateDefenderTypeMatrix,
 } from '../utils/battleCalculator';
 import { matchesPokemonSearch } from '../utils/searchUtils';
-import { PikachuStickerBackground } from '../components/PikachuStickerBackground';
+import {
+  PikachuPattern,
+  PikachuFace,
+  PikachuBadge,
+  EeveePattern,
+  EeveeFace,
+  EeveeBadge,
+  ArceusBackground,
+  ArceusPlate,
+} from '../components';
 import { PikachuLoader } from '../components/PikachuLoader';
 
 const { width } = Dimensions.get('window');
@@ -396,7 +405,9 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {theme.isPikachu && <PikachuStickerBackground opacity={0.20} />}
+      {theme.isPikachu && <PikachuPattern subtle={true} opacity={0.16} />}
+      {theme.isEevee && <EeveePattern subtle={true} opacity={0.16} />}
+      {theme.isArceus && <ArceusBackground subtle={true} opacity={0.16} />}
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
         showsVerticalScrollIndicator={false}
@@ -417,14 +428,28 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
               {(attackerPoke?.name || 'Attacker').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
             </Text>
             <View style={styles.typesRow}>
-              {(attackerPoke.types || []).map((t, idx) => {
-                const tName = typeof t === 'string' ? t : (t?.name || t?.type?.name || 'normal');
-                return (
-                  <View key={`att-${tName}-${idx}`} style={[styles.miniTypePill, { backgroundColor: TYPE_COLORS[tName.toLowerCase()] || '#888' }]}>
-                    <Text style={styles.miniTypePillText}>{tName.toUpperCase()}</Text>
-                  </View>
-                );
-              })}
+              {theme.isArceus ? (
+                (attackerPoke.types || []).map((t, idx) => {
+                  const tName = typeof t === 'string' ? t : (t?.name || t?.type?.name || 'normal');
+                  return (
+                    <ArceusPlate
+                      key={`att-plate-${tName}-${idx}`}
+                      type={tName.toLowerCase()}
+                      size="small"
+                      showLabel={true}
+                    />
+                  );
+                })
+              ) : (
+                (attackerPoke.types || []).map((t, idx) => {
+                  const tName = typeof t === 'string' ? t : (t?.name || t?.type?.name || 'normal');
+                  return (
+                    <View key={`att-${tName}-${idx}`} style={[styles.miniTypePill, { backgroundColor: TYPE_COLORS[tName.toLowerCase()] || '#888' }]}>
+                      <Text style={styles.miniTypePillText}>{tName.toUpperCase()}</Text>
+                    </View>
+                  );
+                })
+              )}
             </View>
             <View style={styles.combatantMetaRow}>
               <Text style={[styles.combatantSub, { color: theme.colors.textSecondary }]}>
@@ -462,7 +487,24 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
             >
               <Ionicons name="swap-horizontal" size={20} color="#FFFFFF" />
             </TouchableOpacity>
-            <Text style={[styles.vsText, { color: theme.colors.textSecondary }]}>VS</Text>
+            {theme.isPikachu ? (
+              <View style={{ alignItems: 'center', marginVertical: 2 }}>
+                <PikachuFace size={22} expression="spark" />
+                <Text style={[styles.vsText, { color: theme.colors.primary, fontSize: 11, fontWeight: '900' }]}>VS</Text>
+              </View>
+            ) : theme.isEevee ? (
+              <View style={{ alignItems: 'center', marginVertical: 2 }}>
+                <EeveeFace size={22} expression="cheerful" showCollar={false} />
+                <Text style={[styles.vsText, { color: theme.colors.primary, fontSize: 11, fontWeight: '900' }]}>VS</Text>
+              </View>
+            ) : theme.isArceus ? (
+              <View style={{ alignItems: 'center', marginVertical: 2 }}>
+                <Ionicons name="sunny" size={20} color="#C9A35B" />
+                <Text style={[styles.vsText, { color: '#C9A35B', fontSize: 11, fontWeight: '900' }]}>VS</Text>
+              </View>
+            ) : (
+              <Text style={[styles.vsText, { color: theme.colors.textSecondary }]}>VS</Text>
+            )}
             {battleResult.speedAdvantage === 'attacker' ? (
               <View style={[styles.speedBadge, { backgroundColor: '#00D2D31C', borderColor: '#00D2D3' }]}>
                 <Ionicons name="flash" size={12} color="#00D2D3" />
@@ -492,14 +534,28 @@ export const BattleCalculatorScreen = ({ navigation, route }) => {
               {(defenderPoke?.name || 'Defender').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
             </Text>
             <View style={styles.typesRow}>
-              {(defenderPoke.types || []).map((t, idx) => {
-                const tName = typeof t === 'string' ? t : (t?.name || t?.type?.name || 'normal');
-                return (
-                  <View key={`def-${tName}-${idx}`} style={[styles.miniTypePill, { backgroundColor: TYPE_COLORS[tName.toLowerCase()] || '#888' }]}>
-                    <Text style={styles.miniTypePillText}>{tName.toUpperCase()}</Text>
-                  </View>
-                );
-              })}
+              {theme.isArceus ? (
+                (defenderPoke.types || []).map((t, idx) => {
+                  const tName = typeof t === 'string' ? t : (t?.name || t?.type?.name || 'normal');
+                  return (
+                    <ArceusPlate
+                      key={`def-plate-${tName}-${idx}`}
+                      type={tName.toLowerCase()}
+                      size="small"
+                      showLabel={true}
+                    />
+                  );
+                })
+              ) : (
+                (defenderPoke.types || []).map((t, idx) => {
+                  const tName = typeof t === 'string' ? t : (t?.name || t?.type?.name || 'normal');
+                  return (
+                    <View key={`def-${tName}-${idx}`} style={[styles.miniTypePill, { backgroundColor: TYPE_COLORS[tName.toLowerCase()] || '#888' }]}>
+                      <Text style={styles.miniTypePillText}>{tName.toUpperCase()}</Text>
+                    </View>
+                  );
+                })
+              )}
             </View>
             <View style={styles.combatantMetaRow}>
               <Text style={[styles.combatantSub, { color: theme.colors.textSecondary }]}>

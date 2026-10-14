@@ -30,74 +30,176 @@ export const THEME_MODES = {
   POKEDEX_RED: 'pokedex-red',
   PIKACHU: 'pikachu',
   ARCEUS: 'arceus',
+  EEVEE: 'eevee',
+  OBSIDIAN: 'obsidian',
 };
 
 // Helper to generate full theme object with selected accent
 export const createTheme = (mode, accentKey = 'classic') => {
   const accent = TYPE_ACCENTS[accentKey] || TYPE_ACCENTS.classic;
+  const isObsidian = mode === THEME_MODES.OBSIDIAN;
   const isAmoled = mode === THEME_MODES.AMOLED;
   const isPokedexRed = mode === THEME_MODES.POKEDEX_RED;
   const isPikachu = mode === THEME_MODES.PIKACHU;
   const isArceus = mode === THEME_MODES.ARCEUS;
-  const isDark = mode === THEME_MODES.DARK || isAmoled || isPokedexRed || isPikachu || isArceus;
+  const isEevee = mode === THEME_MODES.EEVEE;
+  const isDark = mode === THEME_MODES.DARK || isAmoled || isPokedexRed || isObsidian;
+
+  if (isEevee) {
+    return {
+      dark: false,
+      mode: THEME_MODES.EEVEE,
+      accentKey,
+      isEevee: true,
+      colors: {
+        background: '#F5EAD7', // Cozy cream base
+        card: '#FFF8EE', // Warm surface card
+        cardBackground: '#FFF8EE',
+        surface: '#EEDCC8', // Soft light caramel surface
+        surfaceSubtle: '#FFFBF5',
+        text: '#4A3320', // High-contrast deep dark brown
+        textSecondary: '#855E39', // Eevee warm brown secondary
+        border: '#D7B899', // Light caramel border
+        borderLight: '#E8D2BE',
+        primary: '#A67C52', // Iconic Eevee brown
+        primaryLight: 'rgba(166, 124, 82, 0.22)',
+        accent: '#F7A8C3', // Peach accent
+        accentDark: '#E27396',
+        accentLeaf: '#A3D6C6', // Leaf green accent
+        success: '#68BAA4',
+        info: '#7DB5DB',
+        shadow: '#543D28',
+        skeleton: '#E6D3BF',
+        pokedexRed: '#F7A8C3',
+        scannerCyan: '#A3D6C6',
+        eeveeCream: '#F5EAD7',
+        eeveeCaramel: '#D7B899',
+        eeveeBrown: '#A67C52',
+        eeveeDarkBrown: '#6D4C2F',
+        eeveeWarmSurface: '#FFF8EE',
+        eeveeLeaf: '#A3D6C6',
+        eeveePeach: '#F7A8C3',
+      },
+    };
+  }
 
   if (isPikachu) {
     return {
-      dark: true,
+      dark: false,
       mode: THEME_MODES.PIKACHU,
       accentKey,
       isPikachu: true,
       colors: {
-        background: '#1A1605', // Deep lightning-amber obsidian
-        card: '#272007', // Warm Pikachu amber card
-        cardBackground: '#272007',
-        surface: '#362C0B',
-        text: '#FFFDE7', // Warm bright cream yellow text
-        textSecondary: '#E5C158', // Goldenrod secondary
-        border: '#54430F', // Rich gold border
-        primary: '#FFD700', // Iconic Pikachu Electric Gold
-        primaryLight: 'rgba(255, 215, 0, 0.18)',
-        accent: '#FF3B30', // Cheek-Pouch Rosy Red
+        background: '#FFF9E6', // Soft warm yellow base
+        card: '#FFFFFF', // Crisp clean card surface
+        cardBackground: '#FFFFFF',
+        surface: '#FFF2C6', // Soft warm yellow surface
+        surfaceSubtle: '#FFFBEF',
+        text: '#1F1905', // High-contrast warm brown-black text
+        textSecondary: '#7A621E', // Golden-brown secondary text
+        border: '#F6D565', // Rich Pikachu gold border
+        primary: '#E6A800', // Iconic Pikachu electric gold
+        primaryLight: 'rgba(255, 215, 0, 0.22)',
+        accent: '#FF3B30', // Cheek-pouch rosy red
         accentDark: '#D32F2F',
-        success: '#4CAF50',
-        info: '#00E5FF',
-        shadow: '#100C02',
-        skeleton: '#382F0F',
+        success: '#2E7D32',
+        info: '#0288D1',
+        shadow: '#4A3B00',
+        skeleton: '#FFECA8',
         pokedexRed: '#FF3B30',
-        scannerCyan: '#FFD700',
+        scannerCyan: '#FFB800',
         pikachuYellow: '#FFD700',
         pikachuCheek: '#FF3B30',
-        pikachuBrown: '#2A2006',
+        pikachuBrown: '#1F1905',
+        pikachuSoftBase: '#FFF9E6',
+        pikachuCard: '#FFFFFF',
+        pikachuBorder: '#F6D565',
       },
     };
   }
 
   if (isArceus) {
     return {
-      dark: true,
+      dark: false,
       mode: THEME_MODES.ARCEUS,
       accentKey,
       isArceus: true,
       colors: {
-        background: '#0B0F19', // Deep cosmic Sinnoh ether
-        card: '#131A2B', // Celestial platinum-slate
-        cardBackground: '#131A2B',
-        surface: '#1C263D', // Sacred temple altar surface
-        text: '#F5F7FA', // Divine platinum white
-        textSecondary: '#9AAEC7', // Starlight silver
-        border: '#DFC16E4D', // Gold filigree border
-        primary: '#E6C25B', // Sacred Arceus Celestial Gold
-        primaryLight: 'rgba(230, 194, 91, 0.2)',
-        accent: '#00E5FF', // Arc Phone Divine Cyan
-        accentDark: '#0097A7',
-        success: '#1DE9B6', // Jade life energy
-        info: '#E6C25B',
-        shadow: '#04060A',
-        skeleton: '#1F293D',
-        pokedexRed: '#E6C25B',
-        scannerCyan: '#00E5FF',
-        arceusGold: '#E6C25B',
-        arceusJade: '#00E5FF',
+        background: '#F8F2E7', // Aged parchment base
+        card: '#FFFDF9', // Refined ivory card surface
+        cardBackground: '#FFFDF9',
+        surface: '#E5D9C2', // Aged paper surface
+        surfaceSubtle: '#F2EADB',
+        text: '#262626', // Sumi ink black text
+        textSecondary: '#5B6B7F', // Slate blue secondary
+        border: '#E5D9C2', // Weathered paper border
+        borderGold: '#C9A35B', // Divine gold filigree
+        primary: '#C9A35B', // Divine gold inspired by Arceus ring & Plates
+        primaryLight: 'rgba(201, 163, 91, 0.18)',
+        accent: '#5B6B7F', // Slate blue accent
+        accentDark: '#292A2D', // Dark shrine charcoal
+        accentGold: '#C9A35B', // Divine gold
+        accentMist: '#A7C4D9', // Mist blue
+        accentGreen: '#7C9A8B', // Mountain green
+        accentCrimson: '#B44A4A', // Sunset crimson
+        darkShrine: '#292A2D', // Dark shrine
+        success: '#7C9A8B', // Mountain green
+        info: '#5B6B7F', // Slate blue
+        shadow: '#292A2D',
+        skeleton: '#E5D9C2',
+        pokedexRed: '#B44A4A',
+        scannerCyan: '#A7C4D9',
+        parchment: '#F8F2E7',
+        agedPaper: '#E5D9C2',
+        slateBlue: '#5B6B7F',
+        divineGold: '#C9A35B',
+        inkBlack: '#262626',
+        mistBlue: '#A7C4D9',
+        mountainGreen: '#7C9A8B',
+        sunsetCrimson: '#B44A4A',
+      },
+    };
+  }
+
+  if (isObsidian) {
+    return {
+      dark: true,
+      mode: THEME_MODES.OBSIDIAN,
+      accentKey,
+      isObsidian: true,
+      colors: {
+        background: '#0D1117', // Main background: dark graphite
+        backgroundSecondary: '#111820', // Secondary background
+        card: '#151D27', // Card surface
+        cardBackground: '#151D27',
+        surface: '#111820', // Secondary surface
+        surfaceElevated: '#1C2632', // Elevated surface
+        surfaceSubtle: '#1C2632',
+        text: '#F2F4F7', // Primary text
+        textSecondary: '#9AA6B2', // Secondary text
+        border: '#293441', // Borders
+        borderLight: '#384656',
+        primary: accentKey !== 'classic' ? accent.color : '#E34B52', // Primary accent: Poké Ball ruby red
+        primaryLight: 'rgba(227, 75, 82, 0.16)',
+        accent: '#D6B477', // Secondary accent: Gold
+        accentDark: '#8F7546',
+        accentGold: '#D6B477',
+        accentRed: '#E34B52',
+        success: '#3FB950',
+        info: '#58A6FF',
+        shadow: '#05070A',
+        skeleton: '#1C2632',
+        pokedexRed: '#E34B52',
+        scannerCyan: '#58A6FF',
+        obsidianMain: '#0D1117',
+        obsidianSecondary: '#111820',
+        obsidianCard: '#151D27',
+        obsidianElevated: '#1C2632',
+        obsidianRed: '#E34B52',
+        obsidianGold: '#D6B477',
+        obsidianText: '#F2F4F7',
+        obsidianTextMuted: '#9AA6B2',
+        obsidianBorder: '#293441',
       },
     };
   }
@@ -212,7 +314,7 @@ export const createTheme = (mode, accentKey = 'classic') => {
 
 export const ThemeProvider = ({ children }) => {
   const systemScheme = useColorScheme();
-  const [themeMode, setThemeMode] = useState(THEME_MODES.LIGHT);
+  const [themeMode, setThemeMode] = useState(THEME_MODES.PIKACHU);
   const [accentKey, setAccentKey] = useState('classic');
 
   useEffect(() => {
@@ -229,8 +331,8 @@ export const ThemeProvider = ({ children }) => {
           // Check legacy theme preference
           const legacy = await AsyncStorage.getItem('@theme_preference');
           if (legacy === 'dark') setThemeMode(THEME_MODES.DARK);
-          else if (systemScheme === 'dark') setThemeMode(THEME_MODES.DARK);
-          else setThemeMode(THEME_MODES.LIGHT);
+          else if (legacy === 'light') setThemeMode(THEME_MODES.LIGHT);
+          else setThemeMode(THEME_MODES.PIKACHU);
         }
 
         if (savedAccent && TYPE_ACCENTS[savedAccent]) {

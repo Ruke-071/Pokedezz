@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { ITEM_DEX, ITEM_CATEGORIES } from '../data/itemDexData';
 import { pokemonIndex } from '../data/pokemonIndex';
-import { PikachuStickerBackground } from '../components/PikachuStickerBackground';
+import { PikachuPattern, EeveePattern, ArceusBackground } from '../components';
 
 const { width } = Dimensions.get('window');
 
@@ -132,7 +132,9 @@ export const ItemDexScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {theme.id === 'pikachu' && <PikachuStickerBackground opacity={0.16} />}
+      {theme.isPikachu && <PikachuPattern subtle={true} opacity={0.16} />}
+      {theme.isEevee && <EeveePattern subtle={true} opacity={0.16} />}
+      {theme.isArceus && <ArceusBackground subtle={true} opacity={0.16} />}
 
       {/* Search Header */}
       <View style={[styles.searchContainer, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }]}>

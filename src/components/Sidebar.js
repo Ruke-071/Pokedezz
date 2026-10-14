@@ -21,7 +21,13 @@ import { useCollection } from '../context/CollectionContext';
 import { useTeam } from '../context/TeamContext';
 import { navigate } from '../navigation/navigationRef';
 import { PikachuFace } from './PikachuFace';
-import { PikachuStickerBackground } from './PikachuStickerBackground';
+import { PikachuPattern } from './PikachuPattern';
+import { PikachuBadge } from './PikachuBadge';
+import { EeveeFace } from './EeveeFace';
+import { EeveePattern } from './EeveePattern';
+import { EeveeBadge } from './EeveeBadge';
+import { ArceusBackground } from './ArceusBackground';
+import { ArceusPlate } from './ArceusPlate';
 
 const { width } = Dimensions.get('window');
 const DRAWER_WIDTH = Math.min(325, width * 0.84);
@@ -270,20 +276,26 @@ export const Sidebar = () => {
             },
           ]}
         >
-          {theme.isPikachu && <PikachuStickerBackground opacity={0.16} />}
+          {theme.isPikachu && <PikachuPattern subtle={true} opacity={0.14} />}
+          {theme.isEevee && <EeveePattern subtle={true} opacity={0.14} />}
+          {theme.isArceus && <ArceusBackground subtle={true} opacity={0.14} />}
           {/* Header */}
           <View style={[styles.drawerHeader, { borderBottomColor: theme.colors.border }]}>
             <View style={styles.headerBrandRow}>
               <View style={[
                 styles.brandLogoWrap,
                 {
-                  backgroundColor: theme.isPikachu ? '#FFD70026' : '#E6C25B1A',
-                  borderColor: theme.isPikachu ? '#FFD700' : '#E6C25B',
+                  backgroundColor: theme.isPikachu ? '#FFD70026' : theme.isEevee ? '#A67C5226' : theme.isArceus ? '#C9A35B26' : theme.isObsidian ? 'rgba(227, 75, 82, 0.16)' : `${theme.colors.primary}26`,
+                  borderColor: theme.isPikachu ? '#FFD700' : theme.isEevee ? '#A67C52' : theme.isArceus ? '#C9A35B' : theme.isObsidian ? '#E34B52' : theme.colors.primary,
                   overflow: 'hidden',
                 }
               ]}>
                 {theme.isPikachu ? (
                   <PikachuFace size={26} />
+                ) : theme.isEevee ? (
+                  <EeveeFace size={26} showCollar={false} />
+                ) : theme.isArceus ? (
+                  <ArceusPlate type="normal" size={26} />
                 ) : (
                   <Image
                     source={require('../../assets/legends-arceus-pokedex.png')}
@@ -300,9 +312,24 @@ export const Sidebar = () => {
                       <Text style={{ color: '#FFF', fontSize: 9, fontWeight: '900' }}>⚡ PIKA</Text>
                     </View>
                   )}
+                  {theme.isEevee && (
+                    <View style={{ backgroundColor: '#A67C52', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6 }}>
+                      <Text style={{ color: '#FFF', fontSize: 9, fontWeight: '900' }}>🐾 EEVEE</Text>
+                    </View>
+                  )}
+                  {theme.isArceus && (
+                    <View style={{ backgroundColor: '#C9A35B', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6 }}>
+                      <Text style={{ color: '#262626', fontSize: 9, fontWeight: '900' }}>✨ HISUI</Text>
+                    </View>
+                  )}
+                  {theme.isObsidian && (
+                    <View style={{ backgroundColor: '#E34B52', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6 }}>
+                      <Text style={{ color: '#FFF', fontSize: 9, fontWeight: '900' }}>OBSIDIAN</Text>
+                    </View>
+                  )}
                 </View>
-                <Text style={[styles.brandSubtitle, { color: theme.isPikachu ? '#FFD700' : theme.colors.textSecondary }]}>
-                  {theme.isPikachu ? '⚡ Pikachu Signature Mode' : 'Competitive & Dex Suite'}
+                <Text style={[styles.brandSubtitle, { color: theme.isPikachu ? '#FFD700' : theme.isEevee ? '#A67C52' : theme.isArceus ? '#C9A35B' : theme.isObsidian ? '#E34B52' : theme.colors.textSecondary }]}>
+                  {theme.isPikachu ? '⚡ Pikachu Signature Mode' : theme.isEevee ? '🐾 Eevee Cozy Sticker Mode' : theme.isArceus ? '📜 Legends of Hisui Guide' : theme.isObsidian ? 'Obsidian Dark Edition' : 'Competitive & Dex Suite'}
                 </Text>
               </View>
               <TouchableOpacity
@@ -315,7 +342,7 @@ export const Sidebar = () => {
             </View>
 
             {/* Quick Trainer Stats Bar */}
-            <View style={[styles.trainerSnapRow, { backgroundColor: isDarkMode ? '#17171E' : '#F4F5F9', borderColor: theme.colors.border }]}>
+            <View style={[styles.trainerSnapRow, { backgroundColor: theme.isObsidian ? '#151D27' : (isDarkMode ? '#17171E' : '#F4F5F9'), borderColor: theme.colors.border }]}>
               <View style={styles.snapCol}>
                 <Text style={[styles.snapNum, { color: theme.colors.primary }]}>{caught?.length || 0}</Text>
                 <Text style={[styles.snapLbl, { color: theme.colors.textSecondary }]}>Caught</Text>
@@ -356,7 +383,7 @@ export const Sidebar = () => {
                     style={[
                       styles.navItem,
                       {
-                        backgroundColor: theme.colors.background,
+                        backgroundColor: theme.isObsidian ? '#151D27' : theme.colors.background,
                         borderColor: theme.colors.border,
                       },
                     ]}
@@ -364,7 +391,11 @@ export const Sidebar = () => {
                     activeOpacity={0.7}
                   >
                     <View style={[styles.iconWrap, { backgroundColor: `${item.color}18`, borderColor: item.color, overflow: 'hidden' }]}>
-                      {item.imageIcon ? (
+                      {theme.isPikachu && (item.id === 'home' || item.id === 'favorites') ? (
+                        <PikachuFace size={20} expression={item.id === 'favorites' ? 'wink' : 'happy'} blushing={item.id === 'favorites'} />
+                      ) : theme.isEevee && (item.id === 'home' || item.id === 'favorites') ? (
+                        <EeveeFace size={20} expression={item.id === 'favorites' ? 'wink' : 'cheerful'} blushing={item.id === 'favorites'} showCollar={false} />
+                      ) : item.imageIcon ? (
                         <Image
                           source={item.imageIcon}
                           style={{ width: 22, height: 22, borderRadius: 4 }}
@@ -381,11 +412,17 @@ export const Sidebar = () => {
                       </Text>
                     </View>
                     {item.badge && (
-                      <View style={[styles.badgeWrap, { backgroundColor: item.badgeColor ? `${item.badgeColor}22` : '#88888822', borderColor: item.badgeColor || '#888' }]}>
-                        <Text style={[styles.badgeText, { color: item.badgeColor || theme.colors.textSecondary }]}>
-                          {item.badge}
-                        </Text>
-                      </View>
+                      theme.isPikachu ? (
+                        <PikachuBadge text={item.badge} size="tiny" />
+                      ) : theme.isEevee ? (
+                        <EeveeBadge text={item.badge} size="tiny" />
+                      ) : (
+                        <View style={[styles.badgeWrap, { backgroundColor: item.badgeColor ? `${item.badgeColor}22` : '#88888822', borderColor: item.badgeColor || '#888' }]}>
+                          <Text style={[styles.badgeText, { color: item.badgeColor || theme.colors.textSecondary }]}>
+                            {item.badge}
+                          </Text>
+                        </View>
+                      )
                     )}
                   </TouchableOpacity>
                 ))}

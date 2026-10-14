@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import { ArceusPlate } from './ArceusPlate';
 
 export const TYPE_COLORS = {
   normal: '#A8A878',
@@ -188,10 +189,24 @@ export const FilterModal = ({ visible, onClose, activeFilters, onApply }) => {
 
             {/* Types Section */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Types</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                {theme.isArceus ? 'The 18 Sacred Plates (Types)' : 'Types'}
+              </Text>
               <View style={styles.chipsRow}>
                 {TYPES.map(type => {
                   const selected = selectedTypes.includes(type);
+                  if (theme.isArceus) {
+                    return (
+                      <ArceusPlate
+                        key={`modal-plate-${type}`}
+                        type={type}
+                        size={32}
+                        selected={selected}
+                        showLabel={true}
+                        onPress={() => toggleType(type)}
+                      />
+                    );
+                  }
                   const typeColor = TYPE_COLORS[type];
                   return (
                     <TouchableOpacity

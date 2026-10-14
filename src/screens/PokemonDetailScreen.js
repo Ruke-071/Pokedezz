@@ -33,8 +33,17 @@ import { championsPokemon } from '../data/championsPokemon';
 import { pokemonIndex } from '../data/pokemonIndex';
 import { newlyAddedPokemon } from '../data/newlyAdded';
 import { getPokemonDexColor, getSolidCardBg } from '../components/PokemonCard';
-import { PokeBallLoading } from '../components/PokeBallLoading';
-import { PikachuStickerBackground } from '../components/PikachuStickerBackground';
+import {
+  PikachuPattern,
+  PikachuFace,
+  PikachuBadge,
+  EeveePattern,
+  EeveeFace,
+  EeveeBadge,
+  ArceusBackground,
+  ArceusPlate,
+  PokeBallLoading,
+} from '../components';
 
 const { width } = Dimensions.get('window');
 
@@ -373,7 +382,7 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
   const primaryType = details.types[0];
   const typeColor = TYPE_COLORS[primaryType.toLowerCase()] || '#A8A878';
   const dexColor = getPokemonDexColor(details.id, details.name, primaryType);
-  const bannerBgColor = getSolidCardBg(dexColor, theme.dark);
+  const bannerBgColor = theme.isObsidian ? '#151D27' : getSolidCardBg(dexColor, theme.dark);
   const favorited = isFavorite(details.id);
   const inTeam = isInTeam(details.id);
 
@@ -422,13 +431,17 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
 
   // Dynamic screen background color matching Pokemon Pokédex color on Info tab,
   // and clean White/Black depending on light/dark theme on Moves/More tabs.
-  const screenBgColor = activeTab === 'info'
-    ? getSolidCardBg(dexColor, theme.dark)
-    : (theme.dark ? '#000000' : '#FFFFFF');
+  const screenBgColor = theme.isObsidian
+    ? '#0D1117'
+    : (activeTab === 'info'
+        ? getSolidCardBg(dexColor, theme.dark)
+        : (theme.dark ? '#000000' : '#FFFFFF'));
 
   return (
     <View style={[styles.rootContainer, { backgroundColor: screenBgColor }]}>
-      {theme.isPikachu && <PikachuStickerBackground opacity={0.20} />}
+      {theme.isPikachu && <PikachuPattern subtle={true} opacity={0.16} />}
+      {theme.isEevee && <EeveePattern subtle={true} opacity={0.16} />}
+      {theme.isArceus && <ArceusBackground subtle={true} opacity={0.16} />}
       {/* ── Modals ── */}
       {/* Lore version picker */}
       {details.lore?.availableVersions?.length > 0 && (
@@ -607,11 +620,26 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
         }
       >
         {/* Hero Banner */}
-        <View style={[styles.heroBanner, { backgroundColor: bannerBgColor }]}>
+        <View
+          style={[
+            styles.heroBanner,
+            {
+              backgroundColor: bannerBgColor,
+              borderBottomColor: theme.isObsidian ? '#293441' : 'transparent',
+              borderBottomWidth: theme.isObsidian ? 1.5 : 0,
+            },
+          ]}
+        >
           <View style={styles.floatingHeader}>
-            <Text style={[styles.idText, { color: theme.colors.textSecondary }]}>
-              #{String(details.id).padStart(4, '0')}
-            </Text>
+            {theme.isPikachu ? (
+              <PikachuBadge text={`#${String(details.id).padStart(4, '0')}`} size="small" />
+            ) : theme.isEevee ? (
+              <EeveeBadge text={`#${String(details.id).padStart(4, '0')}`} size="small" />
+            ) : (
+              <Text style={[styles.idText, { color: theme.colors.textSecondary }]}>
+                #{String(details.id).padStart(4, '0')}
+              </Text>
+            )}
             <View style={styles.actionRow}>
               {/* Caught status toggle */}
               <TouchableOpacity
@@ -653,12 +681,43 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
                 <Ionicons name="volume-high" size={20} color={theme.colors.primary} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => toggleFavorite(details.id)} style={[styles.roundActionBtn, { backgroundColor: theme.colors.card }]}>
-                <Ionicons name={favorited ? 'heart' : 'heart-outline'} size={20} color={favorited ? '#FF5252' : theme.colors.textSecondary} />
+                {theme.isPikachu ? (
+                  <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                    <PikachuFace size={22} expression={favorited ? 'wink' : 'happy'} blushing={favorited} />
+                    {favorited && (
+                      <Ionicons name="heart" size={10} color="#FF3B30" style={{ position: 'absolute', top: -3, right: -4 }} />
+                    )}
+                  </View>
+                ) : theme.isEevee ? (
+                  <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                    <EeveeFace size={22} expression={favorited ? 'wink' : 'cheerful'} blushing={favorited} showCollar={false} />
+                    {favorited && (
+                      <Ionicons name="heart" size={10} color="#F7A8C3" style={{ position: 'absolute', top: -3, right: -4 }} />
+                    )}
+                  </View>
+                ) : (
+                  <Ionicons
+                    name={favorited ? 'heart' : 'heart-outline'}
+                    size={20}
+                    color={favorited ? (theme.isObsidian ? '#E34B52' : '#FF5252') : theme.colors.textSecondary}
+                  />
+                )}
               </TouchableOpacity>
             </View>
           </View>
 
-          <View style={styles.imageWrapper}>
+          <View
+            style={[
+              styles.imageWrapper,
+              theme.isObsidian && {
+                backgroundColor: '#1C2632',
+                borderRadius: 24,
+                borderWidth: 1.2,
+                borderColor: `${typeColor}40`,
+                padding: 12,
+              },
+            ]}
+          >
             <Image
               source={{ uri: isShiny ? (details.sprites.artworkShiny || details.sprites.artwork) : details.sprites.artwork }}
               style={styles.largeArtwork}
@@ -704,16 +763,29 @@ export const PokemonDetailScreen = ({ route, navigation }) => {
             </View>
           </View>
 
-          {/* Types */}
+          {/* Types / Arceus Plates */}
           <View style={styles.typesRow}>
-            {details.types.map((t, idx) => {
-              const tc = TYPE_COLORS[t.toLowerCase()] || '#A8A878';
-              return (
-                <View key={`${t}-${idx}`} style={[styles.typeBadge, { backgroundColor: tc }]}>
-                  <Text style={styles.typeText}>{t.toUpperCase()}</Text>
-                </View>
-              );
-            })}
+            {theme.isArceus ? (
+              details.types.map((t, idx) => (
+                <ArceusPlate
+                  key={`detail-plate-${t}-${idx}`}
+                  type={t.toLowerCase()}
+                  size="medium"
+                  showLabel={true}
+                  showPlateName={true}
+                  style={{ marginHorizontal: 4 }}
+                />
+              ))
+            ) : (
+              details.types.map((t, idx) => {
+                const tc = TYPE_COLORS[t.toLowerCase()] || '#A8A878';
+                return (
+                  <View key={`${t}-${idx}`} style={[styles.typeBadge, { backgroundColor: tc }]}>
+                    <Text style={styles.typeText}>{t.toUpperCase()}</Text>
+                  </View>
+                );
+              })
+            )}
           </View>
 
           {/* Physical */}

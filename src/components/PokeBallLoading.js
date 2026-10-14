@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { PikachuLoader } from './PikachuLoader';
+import { EeveeLoader } from './EeveeLoader';
+import { ArceusLoader } from './ArceusLoader';
 
 export const PokeBallLoading = ({
   size = 56,
@@ -16,6 +18,26 @@ export const PokeBallLoading = ({
       <PikachuLoader
         size={size}
         message={message}
+        fullScreen={fullScreen}
+      />
+    );
+  }
+
+  if (theme.isEevee) {
+    return (
+      <EeveeLoader
+        size={size}
+        message={message}
+        fullScreen={fullScreen}
+      />
+    );
+  }
+
+  if (theme.isArceus) {
+    return (
+      <ArceusLoader
+        size={size}
+        message={message || 'Consulting ancient Pokédex...'}
         fullScreen={fullScreen}
       />
     );

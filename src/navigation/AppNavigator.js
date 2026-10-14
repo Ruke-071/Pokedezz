@@ -8,6 +8,8 @@ import { useSidebar } from '../context/SidebarContext';
 import { navigationRef } from './navigationRef';
 import { Sidebar } from '../components/Sidebar';
 import { PikachuFace } from '../components/PikachuFace';
+import { EeveeFace } from '../components/EeveeFace';
+import { ArceusPlate } from '../components/ArceusPlate';
 
 // Import Screens
 import { HomeScreen } from '../screens/HomeScreen';
@@ -56,9 +58,9 @@ export default function AppNavigator() {
       >
         <RootStack.Navigator
           screenOptions={{
-            headerStyle: { backgroundColor: theme.colors.card },
-            headerTintColor: theme.colors.text,
-            headerTitleStyle: { fontWeight: '800' },
+            headerStyle: { backgroundColor: theme.isArceus ? '#292A2D' : theme.colors.card },
+            headerTintColor: theme.isArceus ? '#C9A35B' : theme.colors.text,
+            headerTitleStyle: { fontWeight: '800', color: theme.isArceus ? '#F8F2E7' : theme.colors.text },
             headerShadowVisible: false,
           }}
         >
@@ -70,6 +72,10 @@ export default function AppNavigator() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   {theme.isPikachu ? (
                     <PikachuFace size={24} />
+                  ) : theme.isEevee ? (
+                    <EeveeFace size={24} showCollar={false} />
+                  ) : theme.isArceus ? (
+                    <ArceusPlate type="normal" size={24} />
                   ) : (
                     <Image
                       source={require('../../assets/legends-arceus-pokedex.png')}
@@ -77,12 +83,27 @@ export default function AppNavigator() {
                       resizeMode="contain"
                     />
                   )}
-                  <Text style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text }}>
+                  <Text style={{ fontSize: 18, fontWeight: '800', color: theme.isArceus ? '#F8F2E7' : theme.colors.text }}>
                     Pokédex
                   </Text>
                   {theme.isPikachu && (
                     <View style={{ backgroundColor: '#FF3B30', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 8, marginLeft: 2 }}>
                       <Text style={{ color: '#FFF', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>⚡ PIKA</Text>
+                    </View>
+                  )}
+                  {theme.isEevee && (
+                    <View style={{ backgroundColor: '#A67C52', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 8, marginLeft: 2 }}>
+                      <Text style={{ color: '#FFF', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>🐾 EEVEE</Text>
+                    </View>
+                  )}
+                  {theme.isArceus && (
+                    <View style={{ backgroundColor: '#C9A35B', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 8, marginLeft: 2 }}>
+                      <Text style={{ color: '#262626', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>✨ HISUI</Text>
+                    </View>
+                  )}
+                  {theme.isObsidian && (
+                    <View style={{ backgroundColor: '#E34B52', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 8, marginLeft: 2 }}>
+                      <Text style={{ color: '#FFF', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>OBSIDIAN</Text>
                     </View>
                   )}
                 </View>
@@ -93,16 +114,24 @@ export default function AppNavigator() {
                   onPress={openSidebar}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="menu" size={26} color={theme.colors.text} />
+                  <Ionicons name="menu" size={26} color={theme.isArceus ? '#C9A35B' : theme.colors.text} />
                 </TouchableOpacity>
               ),
             headerRight: () => (
-              <View style={{ flexDirection: 'row', gap: 16, marginRight: 8, alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', gap: 14, marginRight: 8, alignItems: 'center' }}>
                 <TouchableOpacity onPress={() => navigation.navigate('Favorites')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="star-outline" size={22} color={theme.colors.text} />
+                  {theme.isPikachu ? (
+                    <PikachuFace size={22} expression="wink" blushing={true} />
+                  ) : theme.isEevee ? (
+                    <EeveeFace size={22} expression="wink" blushing={true} showCollar={false} />
+                  ) : theme.isArceus ? (
+                    <Ionicons name="bookmark-outline" size={22} color="#C9A35B" />
+                  ) : (
+                    <Ionicons name="star-outline" size={22} color={theme.colors.text} />
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => navigation.navigate('Settings')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="ellipsis-vertical" size={22} color={theme.colors.text} />
+                  <Ionicons name="ellipsis-vertical" size={22} color={theme.isArceus ? '#C9A35B' : theme.colors.text} />
                 </TouchableOpacity>
               </View>
             ),
@@ -111,22 +140,54 @@ export default function AppNavigator() {
         <RootStack.Screen
           name="Favorites"
           component={FavoritesScreen}
-          options={{ title: 'Favorites' }}
+          options={{
+            headerTitle: () => (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                {theme.isPikachu && <PikachuFace size={22} expression="wink" blushing={true} />}
+                {theme.isEevee && <EeveeFace size={22} expression="wink" blushing={true} showCollar={false} />}
+                <Text style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text }}>Favorites</Text>
+              </View>
+            ),
+          }}
         />
         <RootStack.Screen
           name="Compare"
           component={CompareScreen}
-          options={{ title: 'Compare Pokémon' }}
+          options={{
+            headerTitle: () => (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                {theme.isPikachu && <PikachuFace size={22} expression="spark" />}
+                {theme.isEevee && <EeveeFace size={22} expression="cheerful" showCollar={false} />}
+                <Text style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text }}>Compare Pokémon</Text>
+              </View>
+            ),
+          }}
         />
         <RootStack.Screen
           name="TeamBuilder"
           component={TeamBuilderScreen}
-          options={{ title: 'Team Builder' }}
+          options={{
+            headerTitle: () => (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                {theme.isPikachu && <PikachuFace size={22} expression="happy" />}
+                {theme.isEevee && <EeveeFace size={22} expression="happy" showCollar={false} />}
+                <Text style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text }}>Team Builder</Text>
+              </View>
+            ),
+          }}
         />
         <RootStack.Screen
           name="BattleCalculator"
           component={BattleCalculatorScreen}
-          options={{ title: 'Battle Calculator' }}
+          options={{
+            headerTitle: () => (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                {theme.isPikachu && <PikachuFace size={22} expression="spark" />}
+                {theme.isEevee && <EeveeFace size={22} expression="cheerful" showCollar={false} />}
+                <Text style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text }}>Battle Calculator</Text>
+              </View>
+            ),
+          }}
         />
         <RootStack.Screen
           name="StatCalculator"
@@ -136,7 +197,15 @@ export default function AppNavigator() {
         <RootStack.Screen
           name="Settings"
           component={SettingsScreen}
-          options={{ title: 'Settings' }}
+          options={{
+            headerTitle: () => (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                {theme.isPikachu && <PikachuFace size={22} expression="happy" />}
+                {theme.isEevee && <EeveeFace size={22} expression="happy" showCollar={false} />}
+                <Text style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text }}>Settings</Text>
+              </View>
+            ),
+          }}
         />
         <RootStack.Screen
           name="PokemonDetail"

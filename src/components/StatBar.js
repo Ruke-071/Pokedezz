@@ -42,12 +42,23 @@ export const StatBar = ({ label, value, maxVal = 255, color }) => {
         {value}
       </Text>
 
-      <View style={[styles.barContainer, { backgroundColor: theme.dark ? '#2D3748' : '#E2E8F0' }]}>
+      <View
+        style={[
+          styles.barContainer,
+          {
+            backgroundColor: theme.isObsidian ? '#111820' : (theme.dark ? '#2D3748' : '#E2E8F0'),
+            borderColor: theme.isObsidian ? '#293441' : 'transparent',
+            borderWidth: theme.isObsidian ? 1 : 0,
+            height: theme.isObsidian ? 7 : 8,
+          },
+        ]}
+      >
         <Animated.View
           style={[
             styles.fillBar,
             {
               backgroundColor: color || theme.colors.primary,
+              borderRadius: theme.isObsidian ? 2 : 4,
               width: widthAnim.interpolate({
                 inputRange: [0, 100],
                 outputRange: ['0%', '100%'],

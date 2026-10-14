@@ -13,12 +13,21 @@ import { useTheme, THEME_MODES, TYPE_ACCENTS } from '../context/ThemeContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { getOfflineCacheStats, clearOfflineCache } from '../services/offlineStorage';
 import { Ionicons } from '@expo/vector-icons';
-import { PikachuFaceWidget } from '../components/PikachuFaceTheme';
-import { PikachuStickerBackground } from '../components/PikachuStickerBackground';
-import { PikachuLoader } from '../components/PikachuLoader';
-import { PikachuFace } from '../components/PikachuFace';
+import {
+  PikachuPattern,
+  PikachuFace,
+  PikachuBadge,
+  PikachuFaceWidget,
+  PikachuLoader,
+  EeveePattern,
+  EeveeFace,
+  EeveeThemeWidget,
+  ArceusBackground,
+  ArceusPlate,
+  ArceusPlateGallery,
+} from '../components';
 
-export const SettingsScreen = () => {
+export const SettingsScreen = ({ navigation }) => {
   const {
     theme,
     themeMode,
@@ -88,18 +97,32 @@ export const SettingsScreen = () => {
 
   const themeOptions = [
     {
+      id: THEME_MODES.OBSIDIAN,
+      name: 'Pokédex Obsidian',
+      desc: 'Sleek dark graphite design with ruby Poké Ball accents',
+      icon: 'contrast-outline',
+      color: '#E34B52',
+    },
+    {
+      id: THEME_MODES.EEVEE,
+      name: 'Eevee Sticker Sheet',
+      desc: 'Cozy cream, fluffy stickers, leaves & hearts',
+      icon: 'heart',
+      color: '#A67C52',
+    },
+    {
       id: THEME_MODES.PIKACHU,
-      name: 'Pikachu Theme',
-      desc: 'Pikachu faces, patterns & loader',
+      name: 'Pikachu Everywhere',
+      desc: 'Faces, patterns, badges & soft yellow theme',
       icon: 'flash',
       color: '#FFD700',
     },
     {
       id: THEME_MODES.ARCEUS,
-      name: 'Arceus Divine',
-      desc: 'Hisui celestial ether & gold',
-      icon: 'sparkles-outline',
-      color: '#E6C25B',
+      name: 'Legends of Hisui',
+      desc: 'Ancient parchment, 18 Plates, ink & divine gold',
+      icon: 'sunny-outline',
+      color: '#C9A35B',
     },
     {
       id: THEME_MODES.POKEDEX_RED,
@@ -137,7 +160,9 @@ export const SettingsScreen = () => {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {theme.isPikachu && <PikachuStickerBackground opacity={0.22} />}
+      {theme.isPikachu && <PikachuPattern subtle={true} opacity={0.16} />}
+      {theme.isEevee && <EeveePattern subtle={true} opacity={0.16} />}
+      {theme.isArceus && <ArceusBackground subtle={true} opacity={0.16} />}
       {/* ── Section 1: Themes ── */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
@@ -162,38 +187,61 @@ export const SettingsScreen = () => {
                 activeOpacity={0.75}
               >
                 <View style={styles.themeCardTop}>
-                  {opt.id === THEME_MODES.PIKACHU ? (
+                  {opt.id === THEME_MODES.EEVEE ? (
                     <View
                       style={[
                         styles.colorSampleBubble,
                         {
-                          backgroundColor: '#FFD700',
-                          borderColor: '#4A3B08',
+                          backgroundColor: '#FFF8EE',
+                          borderColor: '#D7B899',
                           overflow: 'hidden',
                         },
                       ]}
                     >
-                      <Image
-                        source={require('../../assets/pikachu-face.png')}
-                        style={{ width: 22, height: 22, borderRadius: 11 }}
-                        resizeMode="contain"
-                      />
+                      <EeveeFace size={22} showCollar={false} />
+                    </View>
+                  ) : opt.id === THEME_MODES.PIKACHU ? (
+                    <View
+                      style={[
+                        styles.colorSampleBubble,
+                        {
+                          backgroundColor: '#FFF2C6',
+                          borderColor: '#FFD700',
+                          overflow: 'hidden',
+                        },
+                      ]}
+                    >
+                      <PikachuFace size={22} />
                     </View>
                   ) : opt.id === THEME_MODES.ARCEUS ? (
                     <View
                       style={[
                         styles.colorSampleBubble,
                         {
-                          backgroundColor: opt.color,
-                          borderColor: '#DFC16E',
+                          backgroundColor: '#F8F2E7',
+                          borderColor: '#C9A35B',
                           overflow: 'hidden',
                         },
                       ]}
                     >
-                      <Image
-                        source={require('../../assets/legends-arceus-pokedex.png')}
-                        style={{ width: 20, height: 20, borderRadius: 4 }}
-                        resizeMode="contain"
+                      <ArceusPlate type="normal" size={20} />
+                    </View>
+                  ) : opt.id === THEME_MODES.OBSIDIAN ? (
+                    <View
+                      style={[
+                        styles.colorSampleBubble,
+                        {
+                          backgroundColor: '#151D27',
+                          borderColor: '#E34B52',
+                          borderWidth: 1.5,
+                          overflow: 'hidden',
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="contrast"
+                        size={15}
+                        color="#E34B52"
                       />
                     </View>
                   ) : (
@@ -232,10 +280,26 @@ export const SettingsScreen = () => {
           })}
         </View>
 
-        {/* Live Interactive Pikachu Face Widget when in Pikachu Mode */}
+        {/* Live Interactive Widgets */}
         {theme.isPikachu && (
           <View style={{ marginTop: 14 }}>
             <PikachuFaceWidget />
+          </View>
+        )}
+        {theme.isEevee && (
+          <View style={{ marginTop: 14 }}>
+            <EeveeThemeWidget />
+          </View>
+        )}
+        {theme.isArceus && (
+          <View style={{ marginTop: 14 }}>
+            <ArceusPlateGallery
+              onSelectPokemon={(pName) => {
+                if (navigation && navigation.navigate) {
+                  navigation.navigate('PokemonDetail', { name: pName.toLowerCase() });
+                }
+              }}
+            />
           </View>
         )}
       </View>
