@@ -306,7 +306,7 @@ export const Sidebar = () => {
               </View>
               <View style={{ marginLeft: 12, flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={[styles.brandTitle, { color: theme.colors.text }]}>Pokédezz</Text>
+                  <Text style={[styles.brandTitle, { color: theme.colors.text }]}>Pikadex</Text>
                   {theme.isPikachu && (
                     <View style={{ backgroundColor: '#FF3B30', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6 }}>
                       <Text style={{ color: '#FFF', fontSize: 9, fontWeight: '900' }}>⚡ PIKA</Text>
@@ -454,7 +454,7 @@ export const Sidebar = () => {
               />
             </View>
             <Text style={[styles.versionText, { color: theme.colors.textSecondary }]}>
-              Pokédezz v1.0 • Offline Ready
+              Pikadex v1.0 • Offline Ready
             </Text>
           </View>
         </Animated.View>

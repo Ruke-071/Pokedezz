@@ -419,7 +419,7 @@ export const SettingsScreen = ({ navigation }) => {
         <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
           <View style={[styles.infoRow, { borderBottomColor: theme.colors.border }]}>
             <Text style={[styles.infoLabel, { color: theme.colors.textSecondary }]}>Version</Text>
-            <Text style={[styles.infoValue, { color: theme.colors.text }]}>Pokédezz v1.0.0</Text>
+            <Text style={[styles.infoValue, { color: theme.colors.text }]}>Pikadex v1.0.0</Text>
           </View>
 
           
